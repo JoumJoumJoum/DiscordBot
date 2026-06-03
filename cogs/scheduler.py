@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 
 from utils.worldcup import (

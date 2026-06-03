@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from utils.worldcup import (
     import_world_cup_matches
 )
@@ -153,7 +153,7 @@ class PredictionView(discord.ui.View):
         votes[message_id][user_id] = {
             "username": interaction.user.display_name,
             "prediction": prediction,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         save_json("votes.json", votes)
@@ -534,8 +534,8 @@ class Predictions(commands.Cog):
             )
             return
 
-        kickoff = datetime.now(UTC) + timedelta(minutes=10)
-        voting_close = datetime.now(UTC) + timedelta(minutes=5)
+        kickoff = datetime.now(timezone.utc) + timedelta(minutes=10)
+        voting_close = datetime.now(timezone.utc) + timedelta(minutes=5)
 
         embed = discord.Embed(
             title="World Cup Prediction",

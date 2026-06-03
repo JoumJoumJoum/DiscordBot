@@ -230,7 +230,7 @@ class Scheduler(commands.Cog):
         )
 
 
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
 
         for match_id, match in matches.items():
 

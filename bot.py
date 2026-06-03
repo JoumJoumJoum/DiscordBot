@@ -1,68 +1,56 @@
-import os
-import random
 import discord
-from dotenv import load_dotenv
-
-load_dotenv()
-
-TOKEN = os.getenv("DISCORD_TOKEN")
-CHANNEL_ID = int(os.getenv("CONFESSIONS_CHANNEL_ID"))
+from discord.ext import commands
 
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = discord.Client(intents=intents)
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents
+)
 
-
-@client.event
+@bot.event
 async def on_ready():
-    print(f"Logged in as {client.user}")
+    guild = discord.Object(id=781139841445658624)
 
+    bot.tree.copy_global_to(guild=guild)
 
-@client.event
-async def on_message(message):
-    # Ignore bots
-    if message.author.bot:
-        return
+    synced = await bot.tree.sync(guild=guild)
 
-    # Only process DMs
-    if not isinstance(message.channel, discord.DMChannel):
-        return
+    print("Commands:")
+    for cmd in synced:
+        print(f"- {cmd.name}")
 
-    confession_channel = client.get_channel(CHANNEL_ID)
+    print(f"Synced {len(synced)} guild commands")
+    print(f"Logged in as {bot.user}")
 
-    if confession_channel is None:
-        await message.channel.send(
-            "The confession channel could not be found."
-        )
-        return
+@bot.tree.error
+async def on_app_command_error(interaction, error):
+    print("APP COMMAND ERROR:")
+    print(repr(error))
 
-    # Require either text or attachments
-    if not message.content and not message.attachments:
-        await message.channel.send(
-            "Please send a message or an attachment."
-        )
-        return
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                str(error),
+                ephemeral=True
+            )
+    except Exception:
+        pass
 
-    anon_id = random.randint(1000, 9999)
+async def load_extensions():
+    await bot.load_extension("cogs.confessions")
+    await bot.load_extension("cogs.predictions")
+    await bot.load_extension("cogs.leaderboard")
+    await bot.load_extension("cogs.scheduler")
 
-    embed = discord.Embed(
-        description=message.content if message.content else "*Attachment only*",
-        color=0x2B2D31
-    )
+async def main():
+    from utils.config import TOKEN
 
-    embed.set_author(name=f"Anon #{anon_id}")
+    async with bot:
+        await load_extensions()
+        await bot.start(TOKEN)
 
-    files = [await attachment.to_file() for attachment in message.attachments]
-
-    await confession_channel.send(
-        embed=embed,
-        files=files
-    )
-
-    await message.channel.send(
-        "Your confession has been posted anonymously."
-    )
-
-
-client.run(TOKEN)
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

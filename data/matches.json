@@ -1,0 +1,55 @@
+{
+    "1511355957677133924": {
+        "home": "Brazil",
+        "away": "Germany",
+        "kickoff": "2026-06-02T13:18:59.662719+00:00",
+        "voting_close": "2026-06-02T13:13:59.662728+00:00",
+        "status": "open",
+        "result": null
+    },
+    "1511362737052061827": {
+        "home": "Brazil",
+        "away": "Germany",
+        "kickoff": "2026-06-02T13:45:55.884767+00:00",
+        "voting_close": "2026-06-02T13:40:55.884776+00:00",
+        "status": "open",
+        "result": null,
+        "points_awarded": false
+    },
+    "1511364120606146640": {
+        "home": "Brazil",
+        "away": "Germany",
+        "kickoff": "2026-06-02T13:51:24.330719+00:00",
+        "voting_close": "2026-06-02T13:46:24.330728+00:00",
+        "status": "open",
+        "result": null,
+        "points_awarded": false
+    },
+    "1511364690893209652": {
+        "home": "Brazil",
+        "away": "Germany",
+        "kickoff": "2026-06-02T13:53:41.744933+00:00",
+        "voting_close": "2026-06-02T13:48:41.744950+00:00",
+        "status": "open",
+        "result": null,
+        "points_awarded": false
+    },
+    "1511365573232169162": {
+        "home": "Brazil",
+        "away": "Germany",
+        "kickoff": "2026-06-02T13:57:12.165814+00:00",
+        "voting_close": "2026-06-02T13:52:12.165823+00:00",
+        "status": "finished",
+        "result": "Brazil",
+        "points_awarded": true
+    },
+    "1511396019919654993": {
+        "home": "Mexico",
+        "away": "South Africa",
+        "kickoff": "2026-06-02T15:58:10.714475+00:00",
+        "voting_close": "2026-06-02T15:53:10.714485+00:00",
+        "status": "open",
+        "result": null,
+        "points_awarded": false
+    }
+}

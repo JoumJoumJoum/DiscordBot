@@ -117,6 +117,21 @@ class Scheduler(commands.Cog):
             match_votes = votes[message_id]
             winners = []
 
+            losing_votes = 0
+
+            for vote_data in match_votes.values():
+
+                if (
+                    vote_data["prediction"]
+                    != correct_prediction
+                ):
+                    losing_votes += 1
+
+            points_awarded = max(
+                1,
+                losing_votes
+            )
+
             for user_id, vote_data in match_votes.items():
 
                 print(
@@ -139,7 +154,7 @@ class Scheduler(commands.Cog):
 
                     leaderboard[user_id][
                         "points"
-                    ] += 1
+                    ] += points_awarded
 
                     winners.append(
                         vote_data["username"]
@@ -188,10 +203,12 @@ class Scheduler(commands.Cog):
             await channel.send(
                 f"🏆 **{match['home']} vs {match['away']}**\n"
                 f"Winner: **{correct_prediction}**\n"
+                f"Points Awarded: "
+                f"**{points_awarded}**\n"
                 f"Correct Predictions: "
                 f"{', '.join(winners) if winners else 'None'}"
             )
-
+            
             if message_id in votes:
 
                 del votes[message_id]

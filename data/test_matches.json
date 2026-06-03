@@ -1,0 +1,24 @@
+{
+    "1511754225292415018": {
+        "home": "alankrit",
+        "away": "homeless",
+        "kickoff": "2026-06-03T18:31:34.077420+00:00",
+        "stage": "GROUP_STAGE",
+        "poll_created": true,
+        "poll_closed": false,
+        "result_processed": true,
+        "is_test_match": true,
+        "message_id": "1511754225292415018"
+    },
+    "1511770371211137056": {
+        "home": "mancity",
+        "away": "india",
+        "kickoff": "2026-06-03T20:35:43.525380+00:00",
+        "stage": "GROUP_STAGE",
+        "poll_created": true,
+        "poll_closed": false,
+        "result_processed": true,
+        "is_test_match": true,
+        "message_id": "1511770371211137056"
+    }
+}

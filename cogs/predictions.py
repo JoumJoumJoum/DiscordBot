@@ -516,70 +516,264 @@ class Predictions(commands.Cog):
 
     @app_commands.command(
         name="createtestmatch",
-        description="Create a test prediction poll"
+        description="Create a custom test match"
+    )
+    @app_commands.describe(
+        home="Home team",
+        away="Away team",
+        hours_until_kickoff="Hours from now"
     )
     async def create_test_match(
         self,
-        interaction: discord.Interaction
+        interaction: discord.Interaction,
+        home: str,
+        away: str,
+        hours_until_kickoff: int
     ):
-        channel = self.bot.get_channel(PREDICTION_CHANNEL_ID)
-
         if not await self.owner_only(interaction):
             return
 
-        if channel is None:
+        kickoff = (
+            datetime.now(timezone.utc)
+            + timedelta(hours=hours_until_kickoff)
+        )
+
+        match = {
+            "home": home,
+            "away": away,
+            "kickoff": kickoff.isoformat(),
+            "stage": "GROUP_STAGE",
+            "poll_created": True,
+            "poll_closed": False,
+            "result_processed": False,
+            "is_test_match": True
+        }
+
+        message = await self.create_match_poll(
+            match
+        )
+
+        match["message_id"] = str(
+            message.id
+        )
+
+        test_matches = load_json(
+            "test_matches.json"
+        )
+
+        test_matches[str(message.id)] = match
+
+        save_json(
+            "test_matches.json",
+            test_matches
+        )
+
+        await interaction.response.send_message(
+            f"Created {home} vs {away}",
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="endtestmatch",
+        description="End latest test match"
+    )
+    @app_commands.describe(
+        winner="Winner or Draw"
+    )
+    async def end_test_match(
+        self,
+        interaction: discord.Interaction,
+        winner: str
+    ):
+        if not await self.owner_only(interaction):
+            return
+
+        test_matches = load_json(
+            "test_matches.json"
+        )
+
+        if not test_matches:
             await interaction.response.send_message(
-                "Prediction channel not found.",
+                "No test matches found.",
                 ephemeral=True
             )
             return
 
-        kickoff = datetime.now(timezone.utc) + timedelta(minutes=10)
-        voting_close = datetime.now(timezone.utc) + timedelta(minutes=5)
+        latest_id = list(
+            test_matches.keys()
+        )[-1]
 
-        embed = discord.Embed(
-            title="World Cup Prediction",
-            color=0x2B2D31
-        )
+        match = test_matches[
+            latest_id
+        ]
 
-        embed.description = (
-            "**Mexico vs South Africa**\n\n"
-            f"Kickoff\n<t:{int(kickoff.timestamp())}:F>\n\n"
-            f"Voting closes\n<t:{int(voting_close.timestamp())}:F>\n\n"
-            "Mexico (0)\n\n"
-            "Draw (0)\n\n"
-            "South Africa (0)"
-        )
-
-        poll_message = await channel.send(
-            embed=embed,
-            view=PredictionView(
-                self.bot,
-                "Mexico",
-                "South Africa",
-                True
+        if match["result_processed"]:
+            await interaction.response.send_message(
+                "Already processed.",
+                ephemeral=True
             )
-        )
+            return
 
         
-        matches = load_json("worldcup_matches.json")
-        matches[str(poll_message.id)] = {
-            "home": "Mexico",
-            "away": "South Africa",
-            "kickoff": kickoff.isoformat(),
-            "voting_close": voting_close.isoformat(),
-            "status": "open",
-            "result": None,
-            "points_awarded": False
-        }
 
-        save_json("worldcup_matches.json", matches)
+        winner = winner.strip().lower()
 
-        await interaction.response.send_message(
-            "Test match created.",
-            ephemeral=True
+        home = match["home"].strip().lower()
+        away = match["away"].strip().lower()
+
+        if winner not in [
+            home,
+            away,
+            "draw"
+        ]:
+            await interaction.response.send_message(
+                f"Winner must be "
+                f"{match['home']}, "
+                f"{match['away']} or Draw.",
+                ephemeral=True
+            )
+            return
+
+        if winner == home:
+            winner = match["home"]
+
+        elif winner == away:
+            winner = match["away"]
+
+        else:
+            winner = "Draw"
+
+
+        votes = load_json(
+            "votes.json"
         )
 
+        leaderboard = load_json(
+            "leaderboard.json"
+        )
+
+        message_id = match[
+            "message_id"
+        ]
+
+        match_votes = votes.get(
+            message_id,
+            {}
+        )
+
+        winners = []
+
+        losing_votes = 0
+
+        for vote_data in match_votes.values():
+
+            if (
+                vote_data["prediction"]
+                != winner
+            ):
+                losing_votes += 1
+
+        points_awarded = max(
+            1,
+            losing_votes
+        )
+
+        for user_id, vote_data in match_votes.items():
+
+            if (
+                vote_data["prediction"]
+                == winner
+            ):
+
+                if user_id not in leaderboard:
+
+                    leaderboard[user_id] = {
+                        "username":
+                        vote_data["username"],
+                        "points": 0
+                    }
+
+                leaderboard[user_id][
+                    "points"
+                ] += points_awarded
+
+                winners.append(
+                    vote_data["username"]
+                )
+
+        channel = self.bot.get_channel(
+            PREDICTION_CHANNEL_ID
+        )
+
+        message = await channel.fetch_message(
+            int(message_id)
+        )
+
+        embed = message.embeds[0]
+
+        view = self.create_prediction_view(
+            match["home"],
+            match["away"],
+            True
+        )
+
+        view.disable_all_buttons()
+
+        embed.add_field(
+            name="🏆 Result",
+            value=winner,
+            inline=False
+        )
+
+        embed.add_field(
+            name="✅ Correct Predictions",
+            value=(
+                ", ".join(winners)
+                if winners
+                else "None"
+            ),
+            inline=False
+        )
+
+        await message.edit(
+            embed=embed,
+            view=view
+        )
+
+        await channel.send(
+            f"🏆 **{match['home']} vs {match['away']}**\n"
+            f"Winner: **{winner}**\n"
+            f"Points Awarded: "
+            f"**{points_awarded}**\n"
+            f"Correct Predictions: "
+            f"{', '.join(winners) if winners else 'None'}"
+        )
+
+        save_json(
+            "leaderboard.json",
+            leaderboard
+        )
+
+        if message_id in votes:
+
+            del votes[message_id]
+
+            save_json(
+                "votes.json",
+                votes
+            )
+
+        match["result_processed"] = True
+
+        save_json(
+            "test_matches.json",
+            test_matches
+        )
+
+        await interaction.response.send_message(
+            "Test match processed.",
+            ephemeral=True
+        )
 
 async def setup(bot):
     await bot.add_cog(Predictions(bot))

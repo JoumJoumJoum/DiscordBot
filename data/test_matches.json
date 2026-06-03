@@ -20,5 +20,16 @@
         "result_processed": true,
         "is_test_match": true,
         "message_id": "1511770371211137056"
+    },
+    "1511783507364413653": {
+        "home": "Canada",
+        "away": "Punjab",
+        "kickoff": "2026-06-03T20:27:55.434543+00:00",
+        "stage": "GROUP_STAGE",
+        "poll_created": true,
+        "poll_closed": false,
+        "result_processed": true,
+        "is_test_match": true,
+        "message_id": "1511783507364413653"
     }
 }

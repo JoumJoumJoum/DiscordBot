@@ -144,31 +144,139 @@ class PredictionView(discord.ui.View):
             votes[message_id] = {}
 
         if user_id in votes[message_id]:
+
+            old_prediction = (
+                votes[message_id][user_id]
+                ["prediction"]
+            )
+
+            votes[message_id][user_id] = {
+                "username":
+                interaction.user.display_name,
+                "prediction":
+                prediction,
+                "timestamp":
+                datetime.now(
+                    timezone.utc
+                ).isoformat()
+            }
+
+            save_json(
+                "votes.json",
+                votes
+            )
+
             await interaction.followup.send(
-                "You have already voted.",
+                f"Vote changed from "
+                f"{old_prediction} to "
+                f"{prediction}",
                 ephemeral=True
             )
-            return
 
-        votes[message_id][user_id] = {
-            "username": interaction.user.display_name,
-            "prediction": prediction,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+        else:
 
-        save_json("votes.json", votes)
+            votes[message_id][user_id] = {
+                "username":
+                interaction.user.display_name,
+                "prediction":
+                prediction,
+                "timestamp":
+                datetime.now(
+                    timezone.utc
+                ).isoformat()
+            }
+
+            save_json(
+                "votes.json",
+                votes
+            )
+
+            await interaction.followup.send(
+                f"Vote recorded: "
+                f"{prediction}",
+                ephemeral=True
+            )
+
 
         embed = interaction.message.embeds[0]
+
+        kickoff_ts = None
+        close_ts = None
+
+        matches = load_json(
+            "worldcup_matches.json"
+        )
+
+        test_matches = load_json(
+            "test_matches.json"
+        )
+
+        for match in matches.values():
+
+            if (
+                str(interaction.message.id)
+                == match.get("message_id")
+            ):
+
+                kickoff = datetime.fromisoformat(
+                    match["kickoff"].replace(
+                        "Z",
+                        "+00:00"
+                    )
+                )
+
+                kickoff_ts = int(
+                    kickoff.timestamp()
+                )
+
+                close_ts = int(
+                    (
+                        kickoff
+                        - timedelta(hours=1.5)
+                    ).timestamp()
+                )
+
+                break
+
+        for match in test_matches.values():
+
+            if (
+                str(interaction.message.id)
+                == match.get("message_id")
+            ):
+
+                kickoff = datetime.fromisoformat(
+                    match["kickoff"]
+                )
+
+                kickoff_ts = int(
+                    kickoff.timestamp()
+                )
+
+                close_ts = int(
+                    (
+                        kickoff
+                        - timedelta(hours=1.5)
+                    ).timestamp()
+                )
+
+                break
+
+        vote_text = build_vote_description(
+            votes[message_id],
+            self.home_team,
+            self.away_team,
+            self.allow_draw
+        )
 
         embed.description = (
             f"**{self.home_team} vs "
             f"{self.away_team}**\n\n"
-            + build_vote_description(
-                votes[message_id],
-                self.home_team,
-                self.away_team,
-                self.allow_draw
-            )
+            f"Kickoff\n"
+            f"<t:{kickoff_ts}:F>\n\n"
+            f"Voting closes\n"
+            f"<t:{close_ts}:F>\n\n"
+            f"{vote_text}"
         )
 
         await interaction.message.edit(embed=embed)
@@ -183,10 +291,7 @@ class PredictionView(discord.ui.View):
             f"Message ID: {message_id}"
         )
 
-        await interaction.followup.send(
-            f"Vote recorded: {prediction}",
-            ephemeral=True
-        )
+
 
 
 
@@ -242,7 +347,7 @@ class Predictions(commands.Cog):
             )
         )
 
-        voting_close = kickoff - timedelta(hours=2)
+        voting_close = kickoff - timedelta(hours=1.5)
 
         embed = discord.Embed(
             title="World Cup Prediction",

@@ -294,7 +294,7 @@ class Scheduler(commands.Cog):
                 and not match["poll_closed"]
             ):
 
-                close_time = kickoff - timedelta(hours=2)
+                close_time = kickoff - timedelta(hours=1.5)
 
                 if now >= close_time:
 

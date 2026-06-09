@@ -38,6 +38,34 @@ async def on_app_command_error(interaction, error):
     except Exception:
         pass
 
+@bot.command()
+async def dumpdata(ctx):
+    OWNER_ID = 310433679342043136
+
+    if ctx.author.id != OWNER_ID:
+        return
+
+    files = []
+
+    try:
+        files.append(discord.File("data/leaderboard.json"))
+    except FileNotFoundError:
+        pass
+
+    try:
+        files.append(discord.File("data/votes.json"))
+    except FileNotFoundError:
+        pass
+
+    if not files:
+        await ctx.send("No data files found.")
+        return
+
+    await ctx.send(
+        "Here are the data files:",
+        files=files
+    )
+
 async def load_extensions():
     await bot.load_extension("cogs.confessions")
     await bot.load_extension("cogs.predictions")

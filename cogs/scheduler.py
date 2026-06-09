@@ -43,7 +43,7 @@ class Scheduler(commands.Cog):
             f"Synced {count} World Cup fixtures"
         )
 
-    @tasks.loop(minutes=30) #fix
+    @tasks.loop(minutes=15) #fix
     async def result_checker(self):
 
         matches = load_json(
@@ -236,7 +236,7 @@ class Scheduler(commands.Cog):
     async def before_result_checker(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(minutes=30) ##change this
+    @tasks.loop(minutes=10) ##change this
     async def match_scheduler(self):
 
         print("MATCH SCHEDULER STARTED")

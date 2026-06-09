@@ -5,8 +5,8 @@
         "kickoff": "2026-06-11T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
-        "poll_closed": true,
+        "poll_created": false,
+        "poll_closed": false,
         "result_processed": true,
         "message_id": "1511470022038524015"
     },
@@ -16,7 +16,7 @@
         "kickoff": "2026-06-12T02:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407549566550299"
@@ -27,7 +27,7 @@
         "kickoff": "2026-06-12T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407552334921758"
@@ -38,7 +38,7 @@
         "kickoff": "2026-06-13T01:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407554842853457"
@@ -49,7 +49,7 @@
         "kickoff": "2026-06-13T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407556906451075"
@@ -60,7 +60,7 @@
         "kickoff": "2026-06-13T22:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407558743691334"
@@ -71,7 +71,7 @@
         "kickoff": "2026-06-14T01:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407561402749122"
@@ -82,7 +82,7 @@
         "kickoff": "2026-06-14T04:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407563529392301"
@@ -93,7 +93,7 @@
         "kickoff": "2026-06-14T17:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407582550691950"
@@ -104,7 +104,7 @@
         "kickoff": "2026-06-14T20:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407585268596787"
@@ -115,7 +115,7 @@
         "kickoff": "2026-06-14T23:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407589089607851"
@@ -126,7 +126,7 @@
         "kickoff": "2026-06-15T02:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407591333429288"
@@ -137,7 +137,7 @@
         "kickoff": "2026-06-15T16:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407593401356388"
@@ -148,7 +148,7 @@
         "kickoff": "2026-06-15T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407595615686666"
@@ -159,7 +159,7 @@
         "kickoff": "2026-06-15T22:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407597906038794"
@@ -170,7 +170,7 @@
         "kickoff": "2026-06-16T01:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407599885615335"
@@ -181,7 +181,7 @@
         "kickoff": "2026-06-16T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407601961668608"
@@ -192,7 +192,7 @@
         "kickoff": "2026-06-16T22:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407622538919966"
@@ -203,7 +203,7 @@
         "kickoff": "2026-06-17T01:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407625575858337"
@@ -214,7 +214,7 @@
         "kickoff": "2026-06-17T04:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407627693723851"
@@ -225,7 +225,7 @@
         "kickoff": "2026-06-17T17:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407629686280203"
@@ -236,7 +236,7 @@
         "kickoff": "2026-06-17T20:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407631548420127"
@@ -247,7 +247,7 @@
         "kickoff": "2026-06-17T23:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407634090168350"
@@ -258,7 +258,7 @@
         "kickoff": "2026-06-18T02:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407636447363184"
@@ -269,7 +269,7 @@
         "kickoff": "2026-06-18T16:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407638406103323"
@@ -280,7 +280,7 @@
         "kickoff": "2026-06-18T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407658153021643"
@@ -291,7 +291,7 @@
         "kickoff": "2026-06-18T22:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407660069818491"
@@ -302,7 +302,7 @@
         "kickoff": "2026-06-19T01:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407662355710043"
@@ -313,7 +313,7 @@
         "kickoff": "2026-06-19T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407666079989963"
@@ -324,7 +324,7 @@
         "kickoff": "2026-06-19T22:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407668516880384"
@@ -335,7 +335,7 @@
         "kickoff": "2026-06-20T00:30:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407670865825804"
@@ -346,7 +346,7 @@
         "kickoff": "2026-06-20T03:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407674577780857"
@@ -357,7 +357,7 @@
         "kickoff": "2026-06-20T17:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407677006155886"
@@ -368,7 +368,7 @@
         "kickoff": "2026-06-20T20:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407679330062417"
@@ -379,7 +379,7 @@
         "kickoff": "2026-06-21T00:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407700523880592"
@@ -390,7 +390,7 @@
         "kickoff": "2026-06-21T04:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407702788800643"
@@ -401,7 +401,7 @@
         "kickoff": "2026-06-21T16:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407704558801017"
@@ -412,7 +412,7 @@
         "kickoff": "2026-06-21T19:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407707066728468"
@@ -423,7 +423,7 @@
         "kickoff": "2026-06-21T22:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407708924940349"
@@ -434,7 +434,7 @@
         "kickoff": "2026-06-22T01:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407711470882967"
@@ -445,7 +445,7 @@
         "kickoff": "2026-06-22T17:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407715413659729"
@@ -456,7 +456,7 @@
         "kickoff": "2026-06-22T21:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407717472927774"
@@ -467,7 +467,7 @@
         "kickoff": "2026-06-23T00:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407719800770630"
@@ -478,7 +478,7 @@
         "kickoff": "2026-06-23T03:00:00Z",
         "stage": "GROUP_STAGE",
         "status": "TIMED",
-        "poll_created": true,
+        "poll_created": false,
         "poll_closed": false,
         "result_processed": true,
         "message_id": "1511407739950075975"

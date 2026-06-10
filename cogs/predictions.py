@@ -65,10 +65,12 @@ class TeamButton(discord.ui.Button):
         self,
         label,
         style,
+        button_type
     ):
         super().__init__(
             label=label,
             style=style,
+            custom_id=button_type
         )
 
     async def callback(
@@ -77,7 +79,7 @@ class TeamButton(discord.ui.Button):
     ):
         await self.view.handle_vote(
             interaction,
-            self.label
+            self.custom_id
         )
 
 class PredictionView(discord.ui.View):
@@ -99,7 +101,7 @@ class PredictionView(discord.ui.View):
             TeamButton(
                 home_team,
                 discord.ButtonStyle.green,
-                "home"
+                "vote_home"
             )
         )
 
@@ -108,7 +110,7 @@ class PredictionView(discord.ui.View):
                 TeamButton(
                     "Draw",
                     discord.ButtonStyle.gray,
-                    "draw"
+                    "vote_draw"
                 )
             )
 
@@ -116,7 +118,7 @@ class PredictionView(discord.ui.View):
             TeamButton(
                 away_team,
                 discord.ButtonStyle.red,
-                "away"
+                "vote_away"
             )
         )
     def disable_all_buttons(self):
@@ -143,6 +145,50 @@ class PredictionView(discord.ui.View):
 
         message_id = str(interaction.message.id)
         user_id = str(interaction.user.id)
+
+        matches = load_json(
+            "worldcup_matches.json"
+        )
+
+        test_matches = load_json(
+            "test_matches.json"
+        )
+
+        home_team = None
+        away_team = None
+        allow_draw = True
+
+        for match in matches.values():
+
+            if message_id == match.get("message_id"):
+
+                home_team = match["home"]
+                away_team = match["away"]
+
+                allow_draw = (
+                    match["stage"] == "GROUP_STAGE"
+                )
+
+                break
+
+        for match in test_matches.values():
+
+            if message_id == match.get("message_id"):
+
+                home_team = match["home"]
+                away_team = match["away"]
+                allow_draw = True
+
+                break
+
+        if prediction == "vote_home":
+            prediction = home_team
+
+        elif prediction == "vote_away":
+            prediction = away_team
+
+        elif prediction == "vote_draw":
+            prediction = "Draw"
 
         if message_id not in votes:
             votes[message_id] = {}
@@ -215,6 +261,12 @@ class PredictionView(discord.ui.View):
             "test_matches.json"
         )
 
+
+
+        home_team = None
+        away_team = None
+        allow_draw = True
+
         for match in matches.values():
 
             if (
@@ -240,7 +292,15 @@ class PredictionView(discord.ui.View):
                     ).timestamp()
                 )
 
+                home_team = match["home"]
+                away_team = match["away"]
+
+                allow_draw = (
+                    match["stage"] == "GROUP_STAGE"
+                )
+
                 break
+
 
         for match in test_matches.values():
 
@@ -248,6 +308,13 @@ class PredictionView(discord.ui.View):
                 str(interaction.message.id)
                 == match.get("message_id")
             ):
+
+
+                home_team = match["home"]
+                away_team = match["away"]
+                allow_draw = True
+
+
 
                 kickoff = datetime.fromisoformat(
                     match["kickoff"]
@@ -266,16 +333,25 @@ class PredictionView(discord.ui.View):
 
                 break
 
+
+
+        if home_team is None:
+            await interaction.followup.send(
+                "Match data not found.",
+                ephemeral=True
+            )
+            return
+
         vote_text = build_vote_description(
             votes[message_id],
-            self.home_team,
-            self.away_team,
-            self.allow_draw
+            home_team,
+            away_team,
+            allow_draw
         )
 
         embed.description = (
-            f"**{self.home_team} vs "
-            f"{self.away_team}**\n\n"
+            f"**{home_team} vs "
+            f"{away_team}**\n\n"
             f"Kickoff\n"
             f"<t:{kickoff_ts}:F>\n\n"
             f"Voting closes\n"
@@ -283,6 +359,7 @@ class PredictionView(discord.ui.View):
             f"{vote_text}"
         )
 
+        print(vote_text)
         await interaction.message.edit(embed=embed)
 
         owner = await self.bot.fetch_user(OWNER_ID)

@@ -64,11 +64,13 @@ class TeamButton(discord.ui.Button):
     def __init__(
         self,
         label,
-        style
+        style,
+        button_type
     ):
         super().__init__(
             label=label,
-            style=style
+            style=style,
+            custom_id=f"prediction_{button_type}"
         )
 
     async def callback(
@@ -98,7 +100,8 @@ class PredictionView(discord.ui.View):
         self.add_item(
             TeamButton(
                 home_team,
-                discord.ButtonStyle.green
+                discord.ButtonStyle.green,
+                "home"
             )
         )
 
@@ -106,7 +109,8 @@ class PredictionView(discord.ui.View):
             self.add_item(
                 TeamButton(
                     "Draw",
-                    discord.ButtonStyle.gray
+                    discord.ButtonStyle.gray,
+                    "draw"
                 )
             )
 
@@ -114,6 +118,7 @@ class PredictionView(discord.ui.View):
             TeamButton(
                 away_team,
                 discord.ButtonStyle.red
+                "away"
             )
         )
     def disable_all_buttons(self):
@@ -373,6 +378,7 @@ class Predictions(commands.Cog):
         embed.description = description
 
         message = await channel.send(
+            content="<@&1511316717681246228>",
             embed=embed,
             view=PredictionView(
                 self.bot,

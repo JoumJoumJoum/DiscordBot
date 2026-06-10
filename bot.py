@@ -24,30 +24,6 @@ async def on_ready():
     print(f"Synced {len(synced)} guild commands")
     print(f"Logged in as {bot.user}")
 
-    from utils.storage import load_json
-    from cogs.predictions import PredictionView
-
-    matches = load_json(
-        "worldcup_matches.json"
-    )
-
-    for match in matches.values():
-
-        if (
-            match["poll_created"]
-            and not match["poll_closed"]
-        ):
-
-            bot.add_view(
-                PredictionView(
-                    bot,
-                    match["home"],
-                    match["away"],
-                    match["stage"] == "GROUP_STAGE"
-                )
-            )
-
-    print("Views restored")
 
 @bot.tree.error
 async def on_app_command_error(interaction, error):

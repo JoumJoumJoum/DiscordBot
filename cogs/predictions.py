@@ -65,12 +65,10 @@ class TeamButton(discord.ui.Button):
         self,
         label,
         style,
-        button_type
     ):
         super().__init__(
             label=label,
             style=style,
-            custom_id=f"prediction_{button_type}"
         )
 
     async def callback(
@@ -117,7 +115,7 @@ class PredictionView(discord.ui.View):
         self.add_item(
             TeamButton(
                 away_team,
-                discord.ButtonStyle.red
+                discord.ButtonStyle.red,
                 "away"
             )
         )

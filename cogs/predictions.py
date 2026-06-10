@@ -125,6 +125,7 @@ class PredictionView(discord.ui.View):
         interaction: discord.Interaction,
         prediction: str
     ):
+        print("BUTTON CLICKED")
         await interaction.response.defer(ephemeral=True)
         role_ids = [role.id for role in interaction.user.roles]
 

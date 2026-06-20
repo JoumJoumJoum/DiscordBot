@@ -702,6 +702,125 @@ class Predictions(commands.Cog):
         )
 
     @app_commands.command(
+        name="todaysmatches",
+        description="View today's matches and predictions"
+    )
+    async def todays_matches(
+        self,
+        interaction: discord.Interaction
+    ):
+        matches = load_json(
+            "worldcup_matches.json"
+        )
+
+        votes = load_json(
+            "votes.json"
+        )
+
+        today = datetime.now(
+            timezone.utc
+        ).date()
+
+        lines = []
+
+        for match in matches.values():
+            
+            if match["result_processed"]:
+                continue
+
+            kickoff = datetime.fromisoformat(
+                match["kickoff"].replace(
+                    "Z",
+                    "+00:00"
+                )
+            )
+
+            if kickoff.date() != today:
+                continue
+
+            message_id = match.get(
+                "message_id"
+            )
+
+            match_votes = votes.get(
+                message_id,
+                {}
+            )
+
+            home = match["home"]
+            away = match["away"]
+
+            home_count = 0
+            away_count = 0
+            draw_count = 0
+
+            for vote in match_votes.values():
+
+                prediction = vote[
+                    "prediction"
+                ]
+
+                if prediction == home:
+                    home_count += 1
+
+                elif prediction == away:
+                    away_count += 1
+
+                elif prediction == "Draw":
+                    draw_count += 1
+
+            total_votes = len(
+                match_votes
+            )
+
+            poll_url = (
+                f"https://discord.com/channels/"
+                f"{interaction.guild.id}/"
+                f"{PREDICTION_CHANNEL_ID}/"
+                f"{message_id}"
+            )
+
+            vote_line = (
+                f"{home_count} - "
+            )
+
+            if (
+                match["stage"]
+                == "GROUP_STAGE"
+            ):
+                vote_line += (
+                    f"{draw_count} - "
+                )
+
+            vote_line += (
+                f"{away_count}"
+            )
+
+            lines.append(
+                f"**{home} vs {away}**\n"
+                f"Votes: {total_votes}\n"
+                f"{vote_line}\n"
+                f"[Jump to Poll]({poll_url})"
+            )
+
+        if not lines:
+            await interaction.response.send_message(
+                "No matches today.",
+                ephemeral=True
+            )
+            return
+
+        embed = discord.Embed(
+            title="📅 Today's Matches",
+            description="\n\n".join(lines),
+            color=0x2B2D31
+        )
+
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+    @app_commands.command(
         name="createtestmatch",
         description="Create a custom test match"
     )

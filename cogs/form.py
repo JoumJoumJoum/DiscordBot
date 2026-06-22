@@ -50,20 +50,25 @@ class Form(commands.Cog):
 
             scores.append(score)
 
-        plt.style.use("dark_background")
-
-        fig, ax = plt.subplots(
-            figsize=(8, 3)
-        )
-
-        green = "#22C55E"
-        red = "#EF4444"
-
         x = list(
             range(
                 len(scores)
             )
         )
+
+        fig, ax = plt.subplots(
+            figsize=(8, 4)
+        )
+
+        bg = "#1A1B26"
+        grid = "#2D3142"
+        text = "#A9B1D6"
+
+        green = "#4ADE80"
+        red = "#F87171"
+
+        fig.patch.set_facecolor(bg)
+        ax.set_facecolor(bg)
 
         for i in range(
             len(scores) - 1
@@ -71,7 +76,7 @@ class Form(commands.Cog):
 
             color = (
                 green
-                if scores[i + 1] >= scores[i]
+                if scores[i + 1] > scores[i]
                 else red
             )
 
@@ -79,26 +84,70 @@ class Form(commands.Cog):
                 [x[i], x[i + 1]],
                 [scores[i], scores[i + 1]],
                 color=color,
-                linewidth=4,
+                linewidth=3,
                 solid_capstyle="round"
             )
 
-        ax.set_title(
-            f"{username}'s Form",
-            fontsize=14,
-            pad=10
+        ax.scatter(
+            x[1:],
+            scores[1:],
+            c=[
+                green if r == "W"
+                else red
+                for r in history
+            ],
+            s=35,
+            zorder=5
         )
 
-        ax.grid(False)
+        ax.text(
+            0.01,
+            1.03,
+            f"{username}'s Form",
+            transform=ax.transAxes,
+            color=text,
+            fontsize=15,
+            fontweight="bold",
+            ha="left"
+        )
 
-        ax.set_xlabel("")
-        ax.set_ylabel("")
+        ax.grid(
+            True,
+            color=grid,
+            alpha=0.45,
+            linewidth=0.8
+        )
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+        ax.spines["top"].set_visible(
+            False
+        )
 
-        for spine in ax.spines.values():
-            spine.set_visible(False)
+        ax.spines["right"].set_visible(
+            False
+        )
+
+        ax.spines["left"].set_color(
+            grid
+        )
+
+        ax.spines["bottom"].set_color(
+            grid
+        )
+
+        ax.tick_params(
+            colors=text,
+            labelsize=9
+        )
+
+        ax.set_xlabel(
+            "Predictions",
+            color=text
+        )
+
+        ax.set_ylabel(
+            "Form",
+            color=text
+        )
 
         plt.tight_layout()
 
@@ -108,7 +157,7 @@ class Form(commands.Cog):
             buffer,
             format="png",
             dpi=150,
-            transparent=False
+            facecolor=bg
         )
 
         plt.close()

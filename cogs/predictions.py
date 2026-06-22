@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -482,7 +481,7 @@ class Predictions(commands.Cog):
             if user_id in match_votes:
                 vote = match_votes[user_id]
 
-                
+
                 match = matches.get(message_id)
                 if match:
                     predictions.append(
@@ -610,7 +609,7 @@ class Predictions(commands.Cog):
                 ephemeral=True
             )
             return
-        
+
         votes = load_json("votes.json")
         leaderboard = load_json("leaderboard.json")
 
@@ -726,7 +725,7 @@ class Predictions(commands.Cog):
         lines = []
 
         for match in matches.values():
-            
+
             if match["result_processed"]:
                 continue
 
@@ -923,7 +922,7 @@ class Predictions(commands.Cog):
             )
             return
 
-        
+
 
         winner = winner.strip().lower()
 
@@ -1086,4 +1085,3 @@ class Predictions(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Predictions(bot))
-

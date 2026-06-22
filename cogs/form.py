@@ -53,16 +53,11 @@ class Form(commands.Cog):
         plt.style.use("dark_background")
 
         fig, ax = plt.subplots(
-            figsize=(8, 4)
+            figsize=(8, 3)
         )
 
-        bg = "#0F172A"
         green = "#22C55E"
         red = "#EF4444"
-        text = "#E2E8F0"
-
-        fig.patch.set_facecolor(bg)
-        ax.set_facecolor(bg)
 
         x = list(
             range(
@@ -88,97 +83,32 @@ class Form(commands.Cog):
                 solid_capstyle="round"
             )
 
-        ax.scatter(
-            x[-1],
-            scores[-1],
-            s=100,
-            color=(
-                green
-                if history
-                and history[-1] == "W"
-                else red
-            ),
-            zorder=5
-        )
-
         ax.set_title(
             f"{username}'s Form",
-            color=text,
-            fontsize=16,
-            pad=15
+            fontsize=14,
+            pad=10
         )
 
-        ax.set_xlabel(
-            "Prediction Timeline",
-            color=text
-        )
+        ax.grid(False)
 
-        ax.set_ylabel(
-            "Form Score",
-            color=text
-        )
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
-        ax.grid(
-            alpha=0.08
-        )
+        ax.set_xticks([])
+        ax.set_yticks([])
 
-        ax.spines["top"].set_visible(
-            False
-        )
-
-        ax.spines["right"].set_visible(
-            False
-        )
-
-        ax.spines["left"].set_color(
-            "#334155"
-        )
-
-        ax.spines["bottom"].set_color(
-            "#334155"
-        )
-
-        ax.tick_params(
-            colors=text
-        )
-
-        winrate = (
-            history.count("W")
-            / len(history)
-            * 100
-            if history
-            else 0
-        )
-
-        streak = self.calculate_streak(
-            history
-        )
-
-        ax.text(
-            0.02,
-            0.95,
-            f"🔥 Streak: {streak}\n📈 Win Rate: {winrate:.1f}%",
-            transform=ax.transAxes,
-            verticalalignment="top",
-            color=text,
-            fontsize=10,
-            bbox=dict(
-                facecolor="#1E293B",
-                edgecolor="none",
-                alpha=0.8,
-                boxstyle="round,pad=0.4"
-            )
-        )
-
-        buffer = BytesIO()
+        for spine in ax.spines.values():
+            spine.set_visible(False)
 
         plt.tight_layout()
+
+        buffer = BytesIO()
 
         plt.savefig(
             buffer,
             format="png",
             dpi=150,
-            facecolor=bg
+            transparent=False
         )
 
         plt.close()

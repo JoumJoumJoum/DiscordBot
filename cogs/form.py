@@ -38,7 +38,7 @@ class Form(commands.Cog):
         history
     ):
 
-        cumulative = []
+        scores = [0]
         score = 0
 
         for result in history:
@@ -48,7 +48,7 @@ class Form(commands.Cog):
             else:
                 score -= 1
 
-            cumulative.append(score)
+            scores.append(score)
 
         plt.style.use("dark_background")
 
@@ -56,40 +56,70 @@ class Form(commands.Cog):
             figsize=(8, 4)
         )
 
+        bg = "#0F172A"
+        green = "#22C55E"
+        red = "#EF4444"
+        text = "#E2E8F0"
+
+        fig.patch.set_facecolor(bg)
+        ax.set_facecolor(bg)
+
         x = list(
             range(
-                1,
-                len(cumulative) + 1
+                len(scores)
             )
         )
 
-        ax.plot(
-            x,
-            cumulative,
-            linewidth=3
-        )
+        for i in range(
+            len(scores) - 1
+        ):
 
-        ax.fill_between(
-            x,
-            cumulative,
-            alpha=0.15
+            color = (
+                green
+                if scores[i + 1] >= scores[i]
+                else red
+            )
+
+            ax.plot(
+                [x[i], x[i + 1]],
+                [scores[i], scores[i + 1]],
+                color=color,
+                linewidth=4,
+                solid_capstyle="round"
+            )
+
+        ax.scatter(
+            x[-1],
+            scores[-1],
+            s=100,
+            color=(
+                green
+                if history
+                and history[-1] == "W"
+                else red
+            ),
+            zorder=5
         )
 
         ax.set_title(
-            f"{username}'s Form Trend",
+            f"{username}'s Form",
+            color=text,
+            fontsize=16,
             pad=15
         )
 
         ax.set_xlabel(
-            "Predictions"
+            "Prediction Timeline",
+            color=text
         )
 
         ax.set_ylabel(
-            "Form Score"
+            "Form Score",
+            color=text
         )
 
         ax.grid(
-            alpha=0.2
+            alpha=0.08
         )
 
         ax.spines["top"].set_visible(
@@ -100,6 +130,46 @@ class Form(commands.Cog):
             False
         )
 
+        ax.spines["left"].set_color(
+            "#334155"
+        )
+
+        ax.spines["bottom"].set_color(
+            "#334155"
+        )
+
+        ax.tick_params(
+            colors=text
+        )
+
+        winrate = (
+            history.count("W")
+            / len(history)
+            * 100
+            if history
+            else 0
+        )
+
+        streak = self.calculate_streak(
+            history
+        )
+
+        ax.text(
+            0.02,
+            0.95,
+            f"🔥 Streak: {streak}\n📈 Win Rate: {winrate:.1f}%",
+            transform=ax.transAxes,
+            verticalalignment="top",
+            color=text,
+            fontsize=10,
+            bbox=dict(
+                facecolor="#1E293B",
+                edgecolor="none",
+                alpha=0.8,
+                boxstyle="round,pad=0.4"
+            )
+        )
+
         buffer = BytesIO()
 
         plt.tight_layout()
@@ -107,7 +177,8 @@ class Form(commands.Cog):
         plt.savefig(
             buffer,
             format="png",
-            dpi=150
+            dpi=150,
+            facecolor=bg
         )
 
         plt.close()

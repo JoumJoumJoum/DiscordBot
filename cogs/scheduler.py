@@ -1,13 +1,61 @@
 from discord.ext import commands, tasks
 from datetime import datetime, timedelta, timezone
 import asyncio
+from utils.storage import load_json, save_json
+
+def update_prediction_history(
+    user_id,
+    username,
+    result
+):
+    history = load_json(
+        "prediction_history.json"
+    )
+
+    if user_id not in history:
+
+        history[user_id] = {
+            "username": username,
+            "wins": 0,
+            "losses": 0,
+            "streak": 0,
+            "history": []
+        }
+
+    if result == "W":
+
+        history[user_id]["wins"] += 1
+
+    else:
+
+        history[user_id]["losses"] += 1
+
+    history[user_id]["history"].append(
+        result
+    )
+
+    streak = 0
+
+    for item in reversed(
+        history[user_id]["history"]
+    ):
+
+        if item == "W":
+            streak += 1
+        else:
+            break
+
+    history[user_id]["streak"] = streak
+
+    history[user_id]["username"] = username
+
+    save_json(
+        "prediction_history.json",
+        history
+    )
 
 from utils.worldcup import (
     fetch_world_cup_matches
-)
-from utils.storage import (
-    load_json,
-    save_json
 )
 
 from utils.config import (
@@ -134,15 +182,18 @@ class Scheduler(commands.Cog):
 
             for user_id, vote_data in match_votes.items():
 
-                print(
-                    vote_data["prediction"],
-                    correct_prediction
-                )
-
-                if (
+                correct = (
                     vote_data["prediction"]
                     == correct_prediction
-                ):
+                )
+
+                update_prediction_history(
+                    user_id,
+                    vote_data["username"],
+                    "W" if correct else "L"
+                )
+
+                if correct:
 
                     if user_id not in leaderboard:
 
@@ -160,10 +211,11 @@ class Scheduler(commands.Cog):
                         vote_data["username"]
                     )
 
-                    print(
-                        f"Awarded point to "
-                        f"{vote_data['username']}"
-                    )
+                print(
+                    vote_data["prediction"],
+                    correct_prediction
+                )
+
 
             print(
                 f"Processed "

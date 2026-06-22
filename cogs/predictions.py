@@ -702,8 +702,8 @@ class Predictions(commands.Cog):
         )
 
     @app_commands.command(
-        name="todaysmatches",
-        description="View today's matches and predictions"
+        name="upcoming",
+        description="View matches in the next 24 hours"
     )
     async def todays_matches(
         self,
@@ -719,7 +719,9 @@ class Predictions(commands.Cog):
 
         today = datetime.now(
             timezone.utc
-        ).date()
+        )
+
+        next_24h = today + timedelta(hours=24)
 
         lines = []
 
@@ -735,7 +737,7 @@ class Predictions(commands.Cog):
                 )
             )
 
-            if kickoff.date() != today:
+            if kickoff < today or kickoff > next_24h:
                 continue
 
             message_id = match.get(
@@ -798,6 +800,7 @@ class Predictions(commands.Cog):
 
             lines.append(
                 f"**{home} vs {away}**\n"
+                f"Starts: <t:{int(kickoff.timestamp())}:R>\n"
                 f"Votes: {total_votes}\n"
                 f"{vote_line}\n"
                 f"[Jump to Poll]({poll_url})"
@@ -805,13 +808,13 @@ class Predictions(commands.Cog):
 
         if not lines:
             await interaction.response.send_message(
-                "No matches today.",
+                "No matches in the next 24 hours.",
                 ephemeral=True
             )
             return
 
         embed = discord.Embed(
-            title="📅 Today's Matches",
+            title=f"📅 Upcoming Matches ({len(lines)})",
             description="\n\n".join(lines),
             color=0x2B2D31
         )

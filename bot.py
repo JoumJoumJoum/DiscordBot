@@ -110,6 +110,11 @@ async def dumpdata(ctx):
     except FileNotFoundError:
         pass
 
+    try:
+        files.append(discord.File("data/prediction_history.json"))
+    except FileNotFoundError:
+        pass
+    
     if not files:
         await ctx.send("No data files found.")
         return
@@ -124,6 +129,7 @@ async def load_extensions():
     await bot.load_extension("cogs.predictions")
     await bot.load_extension("cogs.leaderboard")
     await bot.load_extension("cogs.scheduler")
+    await bot.load_extension("cogs.form")
 
 async def main():
     from utils.config import TOKEN

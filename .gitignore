@@ -1,3 +1,4 @@
 .env
 discordvenv/
 __pycache__/
+test.py 

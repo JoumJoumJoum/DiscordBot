@@ -302,95 +302,119 @@ class Scheduler(commands.Cog):
         now = datetime.now(timezone.utc)
 
         for match_id, match in matches.items():
-
-            kickoff = datetime.fromisoformat(
-                match["kickoff"].replace(
-                    "Z",
-                    "+00:00"
-                )
-            )
-
-            hours_until = (
-                kickoff - now
-            ).total_seconds() / 3600
-
-            # CREATE POLL
-
-
-            if (
-                not match["poll_created"]
-                and hours_until <= 48 #CHANGE
-            ):
-
-                prediction_cog = self.bot.get_cog(
-                    "Predictions"
-                )
-
-                message = await prediction_cog.create_match_poll(
-                    match
-                )
-
-                match["poll_created"] = True
-
-                match["message_id"] = str(message.id)
-
-                save_json(
-                    "worldcup_matches.json",
-                    matches
-                )
-
-            # CLOSE POLL
-
-            if (
-                match["poll_created"]
-                and not match["poll_closed"]
-            ):
-
-                close_time = kickoff - timedelta(hours=1.5)
-
-                if now >= close_time:
-
-                    channel = self.bot.get_channel(
-                        PREDICTION_CHANNEL_ID
+            try:
+                kickoff = datetime.fromisoformat(
+                    match["kickoff"].replace(
+                        "Z",
+                        "+00:00"
                     )
+                )
 
-                    message = await channel.fetch_message(
-                        int(match["message_id"])
-                    )
+                hours_until = (
+                    kickoff - now
+                ).total_seconds() / 3600
+
+
+                print(
+                    f"{match_id} | "
+                    f"{match['home']} vs {match['away']} | "
+                    f"{hours_until:.2f}h | "
+                    f"created={match['poll_created']} | "
+                    f"closed={match['poll_closed']}"
+                )
+
+                # CREATE POLL
+
+
+                if (
+                    not match["poll_created"]
+                    and 0 < hours_until <= 48
+                ):
 
                     prediction_cog = self.bot.get_cog(
                         "Predictions"
                     )
 
-                    allow_draw = (
-                        match["stage"] == "GROUP_STAGE"
+                    print(
+                        f"Creating poll for "
+                        f"{match['home']} vs {match['away']}"
                     )
 
-                    view = prediction_cog.create_prediction_view(
-                        match["home"],
-                        match["away"],
-                        allow_draw
+                    message = await prediction_cog.create_match_poll(
+                        match
                     )
 
-                    view.disable_all_buttons()
-
-                    embed = message.embeds[0]
-
-                    embed.description += (
-                        "\n\nVoting Closed"
+                    print(
+                        f"Poll created: {message.id}"
                     )
 
-                    await message.edit(
-                        embed=embed,
-                        view=view
-                    )
+                    match["poll_created"] = True
 
-                    match["poll_closed"] = True
+                    match["message_id"] = str(message.id)
 
                     save_json(
                         "worldcup_matches.json",
                         matches
                     )
+
+                # CLOSE POLL
+
+                if (
+                    match["poll_created"]
+                    and not match["poll_closed"]
+                ):
+
+                    close_time = kickoff - timedelta(hours=1.5)
+
+                    if now >= close_time:
+
+                        channel = self.bot.get_channel(
+                            PREDICTION_CHANNEL_ID
+                        )
+
+                        message = await channel.fetch_message(
+                            int(match["message_id"])
+                        )
+
+                        prediction_cog = self.bot.get_cog(
+                            "Predictions"
+                        )
+
+                        allow_draw = (
+                            match["stage"] == "GROUP_STAGE"
+                        )
+
+                        view = prediction_cog.create_prediction_view(
+                            match["home"],
+                            match["away"],
+                            allow_draw
+                        )
+
+                        view.disable_all_buttons()
+
+                        embed = message.embeds[0]
+
+                        embed.description += (
+                            "\n\nVoting Closed"
+                        )
+
+                        await message.edit(
+                            embed=embed,
+                            view=view
+                        )
+
+                        match["poll_closed"] = True
+
+                        save_json(
+                            "worldcup_matches.json",
+                            matches
+                        )
+
+            except Exception:
+                import traceback
+                traceback.print_exc()
+
+            print("MATCH SCHEDULER FINISHED")
 
 
     @match_scheduler.before_loop

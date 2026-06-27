@@ -62,6 +62,13 @@ async def sync_world_cup_matches():
                 match["awayTeam"]["name"]
             )
 
+            print(
+                "UPDATED:",
+                match_id,
+                existing[match_id]["home"],
+                existing[match_id]["away"]
+            )
+
             existing[match_id]["kickoff"] = (
                 match["utcDate"]
             )

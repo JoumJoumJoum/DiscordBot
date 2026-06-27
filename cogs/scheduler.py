@@ -330,6 +330,11 @@ class Scheduler(commands.Cog):
                     not match["poll_created"]
                     and 0 < hours_until <= 48
                 ):
+                    if match["home"] is None or match["away"] is None:
+                        print(
+                            f"Skipping {match_id}: teams not decided yet."
+                        )
+                        continue
 
                     prediction_cog = self.bot.get_cog(
                         "Predictions"

@@ -54,13 +54,20 @@ async def sync_world_cup_matches():
 
         else:
 
-            existing[match_id]["home"] = (
-                match["homeTeam"]["name"]
-            )
+            if match_id == "537417":           #OMIT ASAP
+                print("=" * 50)
+                print("RAW API MATCH:")
+                print(match)
+                print("=" * 50)
 
-            existing[match_id]["away"] = (
-                match["awayTeam"]["name"]
-            )
+            home = match["homeTeam"]["name"]
+            away = match["awayTeam"]["name"]
+
+            if home is not None:
+                existing[match_id]["home"] = home
+
+            if away is not None:
+                existing[match_id]["away"] = away
 
             print(
                 "UPDATED:",

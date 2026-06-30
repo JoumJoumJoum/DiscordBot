@@ -15,6 +15,7 @@ from utils.config import (
 from utils.worldcup import fetch_world_cup_matches
 
 from utils.storage import load_json, save_json
+from cogs.scheduler import update_prediction_history
 
 
 def build_vote_description(
@@ -610,7 +611,7 @@ class Predictions(commands.Cog):
         match = None
 
         for match_data in matches.values():
-            if match_data["message_id"] == message_id:
+            if match_data.get("message_id") == message_id:
                 match = match_data
                 break
 
@@ -677,6 +678,8 @@ class Predictions(commands.Cog):
                 winners.append(vote_data["username"])
 
         channel = self.bot.get_channel(
+            PREDICTION_CHANNEL_ID
+        ) or await self.bot.fetch_channel(
             PREDICTION_CHANNEL_ID
         )
 

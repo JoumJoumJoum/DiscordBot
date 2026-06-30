@@ -588,116 +588,160 @@ class Predictions(commands.Cog):
 
     @app_commands.command(
         name="forceresult",
-        description="Resolve latest open match"
+        description="Force the result of a World Cup match"
     )
     @app_commands.describe(
-        winner="Brazil, Germany or Draw"
+        message_id="Discord message ID of the prediction poll",
+        winner="Winning team name or Draw"
     )
     async def force_result(
         self,
         interaction: discord.Interaction,
+        message_id: str,
         winner: str
     ):
-        winner = winner.title()
-
         if not await self.owner_only(interaction):
             return
 
-        if winner not in ["Brazil", "Germany", "Draw"]:
-            await interaction.response.send_message(
-                "Winner must be Brazil, Germany or Draw.",
-                ephemeral=True
-            )
-            return
-
+        matches = load_json("worldcup_matches.json")
         votes = load_json("votes.json")
         leaderboard = load_json("leaderboard.json")
 
-        open_match_id = None
-        open_match = None
+        match = None
 
-        for match_id, match_data in matches.items():
-            if (
-                match_data["status"] == "open"
-                and not match_data.get("points_awarded", False)
-            ):
-                open_match_id = match_id
-                open_match = match_data
+        for match_data in matches.values():
+            if match_data["message_id"] == message_id:
+                match = match_data
+                break
 
-        if open_match is None:
+        if match is None:
             await interaction.response.send_message(
-                "No open matches found.",
+                "Match not found.",
                 ephemeral=True
             )
             return
 
-        match_votes = votes.get(open_match_id, {})
+        if match["result_processed"]:
+            await interaction.response.send_message(
+                "Result already processed.",
+                ephemeral=True
+            )
+            return
 
-        correct_users = []
-        incorrect_users = []
+        winner = winner.strip()
 
-        for user_id, vote in match_votes.items():
-            prediction = vote["prediction"]
+        if winner.lower() == "draw":
+            winner = "Draw"
+        elif winner.lower() == match["home"].lower():
+            winner = match["home"]
+        elif winner.lower() == match["away"].lower():
+            winner = match["away"]
+        else:
+            await interaction.response.send_message(
+                f"Winner must be {match['home']}, {match['away']} or Draw.",
+                ephemeral=True
+            )
+            return
 
-            if prediction == winner:
+        match_votes = votes.get(message_id, {})
+
+        winners = []
+
+        losing_votes = sum(
+            1
+            for vote in match_votes.values()
+            if vote["prediction"] != winner
+        )
+
+        points_awarded = max(1, losing_votes)
+
+        for user_id, vote_data in match_votes.items():
+
+            correct = vote_data["prediction"] == winner
+
+            update_prediction_history(
+                user_id,
+                vote_data["username"],
+                "W" if correct else "L"
+            )
+
+            if correct:
+
                 if user_id not in leaderboard:
                     leaderboard[user_id] = {
-                        "username": vote["username"],
+                        "username": vote_data["username"],
                         "points": 0
                     }
 
-                leaderboard[user_id]["points"] += 1
-                correct_users.append(vote["username"])
-            else:
-                incorrect_users.append(vote["username"])
+                leaderboard[user_id]["points"] += points_awarded
+                winners.append(vote_data["username"])
 
-        open_match["result"] = winner
-        open_match["status"] = "finished"
-        open_match["points_awarded"] = True
-
-        save_json("worldcup_matches.json", matches)
-        save_json("leaderboard.json", leaderboard)
-
-        correct_text = (
-            "\n".join(f"• {user}" for user in correct_users)
-            if correct_users else
-            "None"
+        channel = self.bot.get_channel(
+            PREDICTION_CHANNEL_ID
         )
 
-        incorrect_text = (
-            "\n".join(f"• {user}" for user in incorrect_users)
-            if incorrect_users else
-            "None"
+        message = await channel.fetch_message(
+            int(message_id)
         )
 
-        embed = discord.Embed(
-            title="Match Resolved",
-            color=0x2B2D31
+        embed = message.embeds[0]
+
+        view = self.create_prediction_view(
+            match["home"],
+            match["away"],
+            match["stage"] == "GROUP_STAGE"
         )
 
-        embed.description = (
-            f"**{open_match['home']} vs "
-            f"{open_match['away']}**\n\n"
-            f"Winner: **{winner}**\n\n"
-            f"Correct\n"
-            f"{correct_text}\n\n"
-            f"Incorrect\n"
-            f"{incorrect_text}"
+        view.disable_all_buttons()
+
+        embed.add_field(
+            name="🏆 Result",
+            value=winner,
+            inline=False
         )
 
-        owner = await self.bot.fetch_user(OWNER_ID)
+        embed.add_field(
+            name="✅ Correct Predictions",
+            value=", ".join(winners) if winners else "None",
+            inline=False
+        )
 
-        await owner.send(
-            f"MATCH RESOLVED\n\n"
-            f"{open_match['home']} vs "
-            f"{open_match['away']}\n"
-            f"Winner: {winner}\n"
-            f"Correct: {len(correct_users)}\n"
-            f"Incorrect: {len(incorrect_users)}"
+        await message.edit(
+            embed=embed,
+            view=view
+        )
+
+        await channel.send(
+            f"🏆 **{match['home']} vs {match['away']}**\n"
+            f"Winner: **{winner}**\n"
+            f"Points Awarded: **{points_awarded}**\n"
+            f"Correct Predictions: "
+            f"{', '.join(winners) if winners else 'None'}"
+        )
+
+        if message_id in votes:
+            del votes[message_id]
+
+        match["result_processed"] = True
+
+        save_json(
+            "votes.json",
+            votes
+        )
+
+        save_json(
+            "leaderboard.json",
+            leaderboard
+        )
+
+        save_json(
+            "worldcup_matches.json",
+            matches
         )
 
         await interaction.response.send_message(
-            embed=embed
+            "Result forced successfully.",
+            ephemeral=True
         )
 
     @app_commands.command(

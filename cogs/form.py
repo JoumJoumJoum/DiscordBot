@@ -71,8 +71,6 @@ class Form(commands.Cog):
         fig.patch.set_facecolor(bg)
         ax.set_facecolor(bg)
 
-        white = "#FFFFFF"
-
         for i in range(
             len(scores) - 1
         ):
@@ -82,7 +80,7 @@ class Form(commands.Cog):
             elif scores[i + 1] < scores[i]:
                 color = red
             else:
-                color = white
+                color = grey
 
             ax.plot(
                 [x[i], x[i + 1]],
@@ -106,7 +104,7 @@ class Form(commands.Cog):
             else:
                 scatter_x.append(x[idx])
                 scatter_y.append(scores[idx])
-                scatter_colors.append(white)
+                scatter_colors.append(grey)
                 scatter_sizes.append(10)
 
         ax.scatter(

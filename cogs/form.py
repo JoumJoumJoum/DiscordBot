@@ -311,6 +311,7 @@ class Form(commands.Cog):
         await interaction.response.defer()
 
         points_history_data = load_json("points_history.json")
+        prediction_history_data = load_json("prediction_history.json")
 
         user1_id = str(user1.id)
         user2_id = str(user2.id)
@@ -326,6 +327,61 @@ class Form(commands.Cog):
         max_len = max(len(history1), len(history2))
         h1_extended = history1 + [history1[-1]] * (max_len - len(history1))
         h2_extended = history2 + [history2[-1]] * (max_len - len(history2))
+
+        # Retrieve prediction stats
+        user1_stats = prediction_history_data.get(user1_id, {"wins": 0, "losses": 0, "history": [], "streak": 0})
+        user2_stats = prediction_history_data.get(user2_id, {"wins": 0, "losses": 0, "history": [], "streak": 0})
+
+        w1, l1 = user1_stats.get("wins", 0), user1_stats.get("losses", 0)
+        w2, l2 = user2_stats.get("wins", 0), user2_stats.get("losses", 0)
+
+        total1 = w1 + l1
+        total2 = w2 + l2
+
+        wr1 = (w1 / total1 * 100) if total1 > 0 else 0.0
+        wr2 = (w2 / total2 * 100) if total2 > 0 else 0.0
+
+        streak1 = self.calculate_streak(user1_stats.get("history", []))
+        streak2 = self.calculate_streak(user2_stats.get("history", []))
+
+        def get_best_streak(history_list):
+            max_streak = 0
+            current = 0
+            for item in history_list:
+                if item == "W":
+                    current += 1
+                    max_streak = max(max_streak, current)
+                elif item == "L":
+                    current = 0
+            return max_streak
+
+        best1 = get_best_streak(user1_stats.get("history", []))
+        best2 = get_best_streak(user2_stats.get("history", []))
+
+        pts1 = h1_extended[-1]
+        pts2 = h2_extended[-1]
+
+        # Formatting comparison strings with crowns
+        def compare_values(v1, v2, format_str="{}", suffix=""):
+            if v1 > v2:
+                return f"{format_str.format(v1)}{suffix} 👑", f"{format_str.format(v2)}{suffix}"
+            elif v2 > v1:
+                return f"{format_str.format(v1)}{suffix}", f"{format_str.format(v2)}{suffix} 👑"
+            else:
+                return f"{format_str.format(v1)}{suffix}", f"{format_str.format(v2)}{suffix}"
+
+        pts1_str, pts2_str = compare_values(pts1, pts2, "`{} pts`")
+        wr1_str, wr2_str = compare_values(round(wr1, 1), round(wr2, 1), "`{}%`")
+        streak1_str, streak2_str = compare_values(streak1, streak2, "`{}`")
+        best1_str, best2_str = compare_values(best1, best2, "`{}`")
+
+        # Compare Win counts for record crown
+        rec1_str = f"`{w1}W - {l1}L`"
+        rec2_str = f"`{w2}W - {l2}L`"
+        if w1 > w2:
+            rec1_str += " 👑"
+        elif w2 > w1:
+            rec2_str += " 👑"
 
         x = list(range(max_len))
 
@@ -438,10 +494,14 @@ class Form(commands.Cog):
         file = discord.File(buffer, filename="versus.png")
 
         embed = discord.Embed(
-            title=f"⚔️ Versus: {user1.display_name} vs {user2.display_name}",
+            title=f"⚔️ Versus Face-Off: {user1.display_name} vs {user2.display_name}",
             description=(
-                f"**{user1.display_name}**: `{h1_extended[-1]} pts`\n"
-                f"**{user2.display_name}**: `{h2_extended[-1]} pts`"
+                f"📊 **Head-to-Head Comparison**\n\n"
+                f"🏆 **Points:** {user1.display_name} ({pts1_str}) vs {user2.display_name} ({pts2_str})\n"
+                f"🎯 **Record:** {user1.display_name} ({rec1_str}) vs {user2.display_name} ({rec2_str})\n"
+                f"📈 **Win Rate:** {user1.display_name} ({wr1_str}) vs {user2.display_name} ({wr2_str})\n"
+                f"🔥 **Current Streak:** {user1.display_name} ({streak1_str}) vs {user2.display_name} ({streak2_str})\n"
+                f"👑 **Best Streak:** {user1.display_name} ({best1_str}) vs {user2.display_name} ({best2_str})"
             ),
             color=0x2B2D31
         )

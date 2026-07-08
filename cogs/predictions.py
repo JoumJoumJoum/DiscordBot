@@ -15,7 +15,10 @@ from utils.config import (
 from utils.worldcup import fetch_world_cup_matches
 
 from utils.storage import load_json, save_json
-from cogs.scheduler import update_all_prediction_histories
+from cogs.scheduler import (
+    update_all_prediction_histories,
+    update_all_points_histories
+)
 
 
 def build_vote_description(
@@ -612,6 +615,12 @@ class Predictions(commands.Cog):
             winner,
             leaderboard
         )
+        update_all_points_histories(
+            match_votes,
+            winner,
+            points_awarded,
+            leaderboard
+        )
 
         for user_id, vote_data in match_votes.items():
 
@@ -798,6 +807,7 @@ class Predictions(commands.Cog):
         # 3. Create map of username (lowercase) to user ID
         leaderboard = load_json("leaderboard.json")
         history = load_json("prediction_history.json")
+        points_history = load_json("points_history.json")
         username_to_id = {}
 
         for uid, udata in leaderboard.items():
@@ -856,6 +866,13 @@ class Predictions(commands.Cog):
                             break
                     user_hist["streak"] = streak
 
+            # Revert points history
+            if user_id in points_history:
+                user_pts = points_history[user_id]
+                if len(user_pts["points_history"]) > 1:
+                    user_pts["points_history"].pop()
+                    user_pts["current_points"] = user_pts["points_history"][-1]
+
         # 6. Rebuild and restore votes.json
         votes = load_json("votes.json")
         votes[message_id] = {}
@@ -876,6 +893,7 @@ class Predictions(commands.Cog):
         save_json("votes.json", votes)
         save_json("leaderboard.json", leaderboard)
         save_json("prediction_history.json", history)
+        save_json("points_history.json", points_history)
         save_json("worldcup_matches.json", matches)
 
         # 8. Reset message embed and view in Discord
@@ -988,14 +1006,11 @@ class Predictions(commands.Cog):
         # Sort by kickoff date
         processed_matches.sort(key=lambda x: x[1].get("kickoff", ""))
 
-        channel = self.bot.get_channel(
-            PREDICTION_CHANNEL_ID
-        ) or await self.bot.fetch_channel(
-            PREDICTION_CHANNEL_ID
-        )
+        channel = interaction.channel
 
-        # Initialize fresh history structure for all users in the leaderboard
+        # Initialize fresh history and points structure for all users in the leaderboard
         reconstructed_history = {}
+        reconstructed_points = {}
         for uid, udata in leaderboard.items():
             reconstructed_history[uid] = {
                 "username": udata["username"],
@@ -1003,6 +1018,11 @@ class Predictions(commands.Cog):
                 "losses": 0,
                 "streak": 0,
                 "history": []
+            }
+            reconstructed_points[uid] = {
+                "username": udata["username"],
+                "current_points": 0,
+                "points_history": [0]
             }
 
         # Mapping for display names to user ID
@@ -1064,7 +1084,13 @@ class Predictions(commands.Cog):
                             current_option = opt
                             break
 
-            # Update prediction history for this match
+            # Update prediction and points history for this match
+            losing_votes = 0
+            for voter_username, prediction in parsed_votes.items():
+                if prediction != processed_winner:
+                    losing_votes += 1
+            points_awarded = max(1, losing_votes)
+
             voted_user_ids = set()
             for voter_username, prediction in parsed_votes.items():
                 user_id = username_to_id.get(voter_username.lower())
@@ -1079,12 +1105,19 @@ class Predictions(commands.Cog):
                             "streak": 0,
                             "history": []
                         }
+                    if user_id not in reconstructed_points:
+                        reconstructed_points[user_id] = {
+                            "username": voter_username,
+                            "current_points": 0,
+                            "points_history": [0]
+                        }
                     
                     correct = (prediction == processed_winner)
                     result = "W" if correct else "L"
                     
                     if result == "W":
                         reconstructed_history[user_id]["wins"] += 1
+                        reconstructed_points[user_id]["current_points"] += points_awarded
                     else:
                         reconstructed_history[user_id]["losses"] += 1
                         
@@ -1094,6 +1127,12 @@ class Predictions(commands.Cog):
             for user_id in reconstructed_history.keys():
                 if user_id not in voted_user_ids:
                     reconstructed_history[user_id]["history"].append("D")
+
+            # Append current points to points history for every user
+            for user_id in reconstructed_points.keys():
+                reconstructed_points[user_id]["points_history"].append(
+                    reconstructed_points[user_id]["current_points"]
+                )
 
             processed_count += 1
 
@@ -1108,6 +1147,7 @@ class Predictions(commands.Cog):
             udata["streak"] = streak
 
         save_json("prediction_history.json", reconstructed_history)
+        save_json("points_history.json", reconstructed_points)
 
         await interaction.followup.send(
             f"Successfully reconstructed prediction histories from Discord messages!\n\n"

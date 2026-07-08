@@ -54,6 +54,46 @@ def update_all_prediction_histories(
 
     save_json("prediction_history.json", history)
 
+def update_all_points_histories(
+    match_votes,
+    correct_prediction,
+    points_awarded,
+    leaderboard
+):
+    points_hist = load_json("points_history.json")
+
+    registered_users = {}
+    for uid, udata in leaderboard.items():
+        registered_users[uid] = udata["username"]
+    for uid, udata in points_hist.items():
+        if uid not in registered_users:
+            registered_users[uid] = udata["username"]
+
+    for user_id, username in registered_users.items():
+        if user_id not in points_hist:
+            points_hist[user_id] = {
+                "username": username,
+                "current_points": 0,
+                "points_history": [0]
+            }
+
+        correct = False
+        if user_id in match_votes:
+            correct = (
+                match_votes[user_id]["prediction"]
+                == correct_prediction
+            )
+
+        if correct:
+            points_hist[user_id]["current_points"] += points_awarded
+
+        points_hist[user_id]["points_history"].append(
+            points_hist[user_id]["current_points"]
+        )
+        points_hist[user_id]["username"] = username
+
+    save_json("points_history.json", points_hist)
+
 from utils.worldcup import (
     fetch_world_cup_matches
 )
@@ -183,6 +223,12 @@ class Scheduler(commands.Cog):
             update_all_prediction_histories(
                 match_votes,
                 correct_prediction,
+                leaderboard
+            )
+            update_all_points_histories(
+                match_votes,
+                correct_prediction,
+                points_awarded,
                 leaderboard
             )
 

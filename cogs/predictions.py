@@ -699,6 +699,270 @@ class Predictions(commands.Cog):
         )
 
     @app_commands.command(
+        name="revertmatch",
+        description="Revert a match outcome: restores votes, adjusts leaderboard points, and resets history."
+    )
+    @app_commands.describe(
+        message_id="Discord message ID of the prediction poll"
+    )
+    async def revert_match(
+        self,
+        interaction: discord.Interaction,
+        message_id: str
+    ):
+        if not await self.owner_only(interaction):
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        matches = load_json("worldcup_matches.json")
+        match = None
+
+        for match_data in matches.values():
+            if match_data.get("message_id") == message_id:
+                match = match_data
+                break
+
+        if match is None:
+            await interaction.followup.send(
+                "Match not found in database.",
+                ephemeral=True
+            )
+            return
+
+        if not match.get("result_processed"):
+            await interaction.followup.send(
+                "Match result has not been processed yet.",
+                ephemeral=True
+            )
+            return
+
+        # Fetch the message
+        channel = self.bot.get_channel(
+            PREDICTION_CHANNEL_ID
+        ) or await self.bot.fetch_channel(
+            PREDICTION_CHANNEL_ID
+        )
+
+        try:
+            message = await channel.fetch_message(int(message_id))
+        except Exception as e:
+            await interaction.followup.send(
+                f"Failed to fetch match message from Discord: {e}",
+                ephemeral=True
+            )
+            return
+
+        if not message.embeds:
+            await interaction.followup.send(
+                "Discord message has no embeds to parse.",
+                ephemeral=True
+            )
+            return
+
+        embed = message.embeds[0]
+
+        # 1. Parse the processed result from the embed
+        processed_winner = None
+        for field in embed.fields:
+            if field.name == "🏆 Result":
+                processed_winner = field.value
+                break
+
+        if not processed_winner:
+            await interaction.followup.send(
+                "Could not find processed result field in the message embed.",
+                ephemeral=True
+            )
+            return
+
+        # 2. Parse votes from the embed description
+        embed_desc = embed.description or ""
+        parsed_votes = {}  # username -> prediction
+        current_option = None
+
+        for line in embed_desc.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("• "):
+                voter_username = line[2:].strip()
+                if current_option:
+                    parsed_votes[voter_username] = current_option
+            else:
+                for opt in [match["home"], match["away"], "Draw"]:
+                    if line.startswith(opt):
+                        current_option = opt
+                        break
+
+        # 3. Create map of username (lowercase) to user ID
+        leaderboard = load_json("leaderboard.json")
+        history = load_json("prediction_history.json")
+        username_to_id = {}
+
+        for uid, udata in leaderboard.items():
+            username_to_id[udata["username"].lower()] = uid
+        for uid, udata in history.items():
+            username_to_id[udata["username"].lower()] = uid
+
+        # Fallback: query guild members
+        try:
+            async for member in interaction.guild.fetch_members(limit=None):
+                username_to_id[member.display_name.lower()] = str(member.id)
+                username_to_id[member.name.lower()] = str(member.id)
+        except Exception:
+            pass
+
+        # 4. Calculate points awarded
+        losing_votes = 0
+        for voter_username, prediction in parsed_votes.items():
+            if prediction != processed_winner:
+                losing_votes += 1
+        points_awarded = max(1, losing_votes)
+
+        # 5. Revert leaderboard points and history
+        reverted_voters = []
+        not_found_voters = []
+
+        for voter_username, prediction in parsed_votes.items():
+            user_id = username_to_id.get(voter_username.lower())
+            if not user_id:
+                not_found_voters.append(voter_username)
+                continue
+
+            correct = (prediction == processed_winner)
+            reverted_voters.append(voter_username)
+
+            # Revert leaderboard points
+            if correct and user_id in leaderboard:
+                leaderboard[user_id]["points"] = max(0, leaderboard[user_id]["points"] - points_awarded)
+
+            # Revert prediction history
+            if user_id in history:
+                user_hist = history[user_id]
+                if user_hist["history"]:
+                    last_result = user_hist["history"].pop()
+                    if last_result == "W":
+                        user_hist["wins"] = max(0, user_hist["wins"] - 1)
+                    else:
+                        user_hist["losses"] = max(0, user_hist["losses"] - 1)
+                    
+                    # Recalculate streak
+                    streak = 0
+                    for item in reversed(user_hist["history"]):
+                        if item == "W":
+                            streak += 1
+                        else:
+                            break
+                    user_hist["streak"] = streak
+
+        # 6. Rebuild and restore votes.json
+        votes = load_json("votes.json")
+        votes[message_id] = {}
+        for voter_username, prediction in parsed_votes.items():
+            user_id = username_to_id.get(voter_username.lower())
+            if user_id:
+                votes[message_id][user_id] = {
+                    "username": voter_username,
+                    "prediction": prediction,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+
+        # 7. Update match status in worldcup_matches.json
+        match["result_processed"] = False
+        match["poll_closed"] = False
+
+        # Save all files
+        save_json("votes.json", votes)
+        save_json("leaderboard.json", leaderboard)
+        save_json("prediction_history.json", history)
+        save_json("worldcup_matches.json", matches)
+
+        # 8. Reset message embed and view in Discord
+        new_fields = []
+        for field in embed.fields:
+            if field.name not in ["🏆 Result", "✅ Correct Predictions"]:
+                new_fields.append(field)
+        embed.clear_fields()
+        for field in new_fields:
+            embed.add_field(name=field.name, value=field.value, inline=field.inline)
+
+        view = self.create_prediction_view(
+            match["home"],
+            match["away"],
+            match["stage"] == "GROUP_STAGE"
+        )
+
+        await message.edit(
+            embed=embed,
+            view=view
+        )
+
+        response_msg = (
+            f"Successfully reverted match **{match['home']} vs {match['away']}**.\n\n"
+            f"✅ **Reverted Status:** `result_processed = False` and `poll_closed = False`.\n"
+            f"✅ **Restored Votes:** {len(votes[message_id])} predictions restored to database.\n"
+            f"✅ **Adjusted Points:** Deducted **{points_awarded}** points from correct predictors.\n"
+            f"✅ **Adjusted History:** Removed last prediction result from player history records."
+        )
+
+        if not_found_voters:
+            response_msg += f"\n\n⚠️ **Notice:** Could not find user IDs for the following usernames to deduct points/history: {', '.join(not_found_voters)}"
+
+        await interaction.followup.send(
+            response_msg,
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="help",
+        description="Show all available commands and their descriptions"
+    )
+    async def help_command(
+        self,
+        interaction: discord.Interaction
+    ):
+        embed = discord.Embed(
+            title="⚽ FIFA Bot Command Help",
+            description="Here are all the available slash and prefix commands in this bot:",
+            color=0x2B2D31
+        )
+
+        embed.add_field(
+            name="📊 General Commands",
+            value=(
+                "**`/leaderboard`** - View the current World Cup standings and points.\n"
+                "**`/form [user]`** - View yours or another member's prediction history, streak, and form chart.\n"
+                "**`/myprediction`** - View your active predictions for upcoming matches.\n"
+                "**`/upcoming`** - View matches starting in the next 24 hours with poll links and vote counts."
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🛠️ Admin Commands (Owner Only)",
+            value=(
+                "**`/forceresult [message_id] [winner]`** - Force a match result (winner team name or Draw) and award points.\n"
+                "**`/revertmatch [message_id]`** - Revert a match's processed status to false so you can force end it again.\n"
+                "**`/createtestmatch [home] [away] [hours]`** - Create a custom match poll for testing.\n"
+                "**`/testpoints`** - Give yourself 1 point on the leaderboard for testing.\n"
+                "**`!dumpdata`** - (Prefix Command) Dumps the bot's raw database JSON files."
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🤫 DM Features",
+            value="Send a Direct Message to the bot with text/images to post anonymously in the confessions channel.",
+            inline=False
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
+
+    @app_commands.command(
         name="upcoming",
         description="View matches in the next 24 hours"
     )

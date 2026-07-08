@@ -440,8 +440,8 @@ class Form(commands.Cog):
         embed = discord.Embed(
             title=f"⚔️ Versus: {user1.display_name} vs {user2.display_name}",
             description=(
-                f"**{user1.display_name}**: `{h1_extended[-1]} pts` (Pink Line)\n"
-                f"**{user2.display_name}**: `{h2_extended[-1]} pts` (Blue Line)"
+                f"**{user1.display_name}**: `{h1_extended[-1]} pts`\n"
+                f"**{user2.display_name}**: `{h2_extended[-1]} pts`"
             ),
             color=0x2B2D31
         )

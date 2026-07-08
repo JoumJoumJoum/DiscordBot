@@ -951,6 +951,7 @@ class Predictions(commands.Cog):
             value=(
                 "**`/leaderboard`** - View the current World Cup standings and points.\n"
                 "**`/form [user]`** - View yours or another member's prediction history, streak, and form chart.\n"
+                "**`/versus [user1] [user2]`** - Compare the points progress of two users in a graph race.\n"
                 "**`/myprediction`** - View your active predictions for upcoming matches.\n"
                 "**`/upcoming`** - View matches starting in the next 24 hours with poll links and vote counts."
             ),

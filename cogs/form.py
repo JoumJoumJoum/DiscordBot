@@ -90,14 +90,20 @@ class Form(commands.Cog):
                 solid_capstyle="round"
             )
 
+        scatter_x = []
+        scatter_y = []
+        scatter_colors = []
+
+        for idx, r in enumerate(history, start=1):
+            if r in ["W", "L"]:
+                scatter_x.append(x[idx])
+                scatter_y.append(scores[idx])
+                scatter_colors.append(green if r == "W" else red)
+
         ax.scatter(
-            x[1:],
-            scores[1:],
-            c=[
-                green if r == "W"
-                else (red if r == "L" else grey)
-                for r in history
-            ],
+            scatter_x,
+            scatter_y,
+            c=scatter_colors,
             s=35,
             zorder=5
         )

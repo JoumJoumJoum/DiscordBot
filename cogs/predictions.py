@@ -15,7 +15,7 @@ from utils.config import (
 from utils.worldcup import fetch_world_cup_matches
 
 from utils.storage import load_json, save_json
-from cogs.scheduler import update_prediction_history
+from cogs.scheduler import update_all_prediction_histories
 
 
 def build_vote_description(
@@ -607,15 +607,15 @@ class Predictions(commands.Cog):
 
         points_awarded = max(1, losing_votes)
 
+        update_all_prediction_histories(
+            match_votes,
+            winner,
+            leaderboard
+        )
+
         for user_id, vote_data in match_votes.items():
 
             correct = vote_data["prediction"] == winner
-
-            update_prediction_history(
-                user_id,
-                vote_data["username"],
-                "W" if correct else "L"
-            )
 
             if correct:
 
@@ -844,7 +844,7 @@ class Predictions(commands.Cog):
                     last_result = user_hist["history"].pop()
                     if last_result == "W":
                         user_hist["wins"] = max(0, user_hist["wins"] - 1)
-                    else:
+                    elif last_result == "L":
                         user_hist["losses"] = max(0, user_hist["losses"] - 1)
                     
                     # Recalculate streak
@@ -943,7 +943,8 @@ class Predictions(commands.Cog):
             name="🛠️ Admin Commands (Owner Only)",
             value=(
                 "**`/forceresult [message_id] [winner]`** - Force a match result (winner team name or Draw) and award points.\n"
-                "**`/revertmatch [message_id]`** - Revert a match's processed status to false so you can force end it again.\n"
+                "**`/revertmatch [message_id]`** - Revert a match: deducts points, adjusts streaks/history, restores votes.\n"
+                "**`/rebuildhistory`** - Reconstruct prediction history including flatlines (no-votes) from channel logs.\n"
                 "**`/createtestmatch [home] [away] [hours]`** - Create a custom match poll for testing.\n"
                 "**`/testpoints`** - Give yourself 1 point on the leaderboard for testing.\n"
                 "**`!dumpdata`** - (Prefix Command) Dumps the bot's raw database JSON files."
@@ -959,6 +960,160 @@ class Predictions(commands.Cog):
 
         await interaction.response.send_message(
             embed=embed,
+            ephemeral=True
+        )
+
+    @app_commands.command(
+        name="rebuildhistory",
+        description="Reconstruct prediction history (including D for no-votes) from Discord channel messages."
+    )
+    async def rebuild_history(
+        self,
+        interaction: discord.Interaction
+    ):
+        if not await self.owner_only(interaction):
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        matches = load_json("worldcup_matches.json")
+        leaderboard = load_json("leaderboard.json")
+        
+        # Sort processed matches chronologically by kickoff date
+        processed_matches = []
+        for match_id, mdata in matches.items():
+            if mdata.get("result_processed") and mdata.get("message_id"):
+                processed_matches.append((match_id, mdata))
+                
+        # Sort by kickoff date
+        processed_matches.sort(key=lambda x: x[1].get("kickoff", ""))
+
+        channel = self.bot.get_channel(
+            PREDICTION_CHANNEL_ID
+        ) or await self.bot.fetch_channel(
+            PREDICTION_CHANNEL_ID
+        )
+
+        # Initialize fresh history structure for all users in the leaderboard
+        reconstructed_history = {}
+        for uid, udata in leaderboard.items():
+            reconstructed_history[uid] = {
+                "username": udata["username"],
+                "wins": 0,
+                "losses": 0,
+                "streak": 0,
+                "history": []
+            }
+
+        # Mapping for display names to user ID
+        username_to_id = {}
+        for uid, udata in leaderboard.items():
+            username_to_id[udata["username"].lower()] = uid
+
+        try:
+            async for member in interaction.guild.fetch_members(limit=None):
+                username_to_id[member.display_name.lower()] = str(member.id)
+                username_to_id[member.name.lower()] = str(member.id)
+        except Exception:
+            pass
+
+        processed_count = 0
+        failed_count = 0
+
+        for match_id, mdata in processed_matches:
+            message_id = mdata["message_id"]
+            try:
+                msg = await channel.fetch_message(int(message_id))
+            except Exception:
+                failed_count += 1
+                continue
+
+            if not msg.embeds:
+                failed_count += 1
+                continue
+
+            embed = msg.embeds[0]
+
+            # Parse processed result from embed
+            processed_winner = None
+            for field in embed.fields:
+                if field.name == "🏆 Result":
+                    processed_winner = field.value
+                    break
+
+            if not processed_winner:
+                failed_count += 1
+                continue
+
+            # Parse votes from embed description
+            embed_desc = embed.description or ""
+            parsed_votes = {}  # username -> prediction
+            current_option = None
+
+            for line in embed_desc.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith("• "):
+                    voter_username = line[2:].strip()
+                    if current_option:
+                        parsed_votes[voter_username] = current_option
+                else:
+                    for opt in [mdata["home"], mdata["away"], "Draw"]:
+                        if line.startswith(opt):
+                            current_option = opt
+                            break
+
+            # Update prediction history for this match
+            voted_user_ids = set()
+            for voter_username, prediction in parsed_votes.items():
+                user_id = username_to_id.get(voter_username.lower())
+                if user_id:
+                    voted_user_ids.add(user_id)
+                    # If this user is not in our dict yet, initialize them
+                    if user_id not in reconstructed_history:
+                        reconstructed_history[user_id] = {
+                            "username": voter_username,
+                            "wins": 0,
+                            "losses": 0,
+                            "streak": 0,
+                            "history": []
+                        }
+                    
+                    correct = (prediction == processed_winner)
+                    result = "W" if correct else "L"
+                    
+                    if result == "W":
+                        reconstructed_history[user_id]["wins"] += 1
+                    else:
+                        reconstructed_history[user_id]["losses"] += 1
+                        
+                    reconstructed_history[user_id]["history"].append(result)
+
+            # For all other registered users who didn't vote in this match, add "D"
+            for user_id in reconstructed_history.keys():
+                if user_id not in voted_user_ids:
+                    reconstructed_history[user_id]["history"].append("D")
+
+            processed_count += 1
+
+        # Finally, recalculate streaks and save history
+        for user_id, udata in reconstructed_history.items():
+            streak = 0
+            for item in reversed(udata["history"]):
+                if item == "W":
+                    streak += 1
+                else:
+                    break
+            udata["streak"] = streak
+
+        save_json("prediction_history.json", reconstructed_history)
+
+        await interaction.followup.send(
+            f"Successfully reconstructed prediction histories from Discord messages!\n\n"
+            f"✅ **Processed Matches:** {processed_count}\n"
+            f"❌ **Failed Matches:** {failed_count}\n"
+            f"👥 **Updated Players:** {len(reconstructed_history)}",
             ephemeral=True
         )
 

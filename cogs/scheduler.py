@@ -3,56 +3,56 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 from utils.storage import load_json, save_json
 
-def update_prediction_history(
-    user_id,
-    username,
-    result
+def update_all_prediction_histories(
+    match_votes,
+    correct_prediction,
+    leaderboard
 ):
-    history = load_json(
-        "prediction_history.json"
-    )
+    history = load_json("prediction_history.json")
 
-    if user_id not in history:
+    registered_users = {}
+    for uid, udata in leaderboard.items():
+        registered_users[uid] = udata["username"]
+    for uid, udata in history.items():
+        if uid not in registered_users:
+            registered_users[uid] = udata["username"]
 
-        history[user_id] = {
-            "username": username,
-            "wins": 0,
-            "losses": 0,
-            "streak": 0,
-            "history": []
-        }
+    for user_id, username in registered_users.items():
+        if user_id not in history:
+            history[user_id] = {
+                "username": username,
+                "wins": 0,
+                "losses": 0,
+                "streak": 0,
+                "history": []
+            }
 
-    if result == "W":
-
-        history[user_id]["wins"] += 1
-
-    else:
-
-        history[user_id]["losses"] += 1
-
-    history[user_id]["history"].append(
-        result
-    )
-
-    streak = 0
-
-    for item in reversed(
-        history[user_id]["history"]
-    ):
-
-        if item == "W":
-            streak += 1
+        if user_id in match_votes:
+            correct = (
+                match_votes[user_id]["prediction"]
+                == correct_prediction
+            )
+            result = "W" if correct else "L"
         else:
-            break
+            result = "D"
 
-    history[user_id]["streak"] = streak
+        if result == "W":
+            history[user_id]["wins"] += 1
+        elif result == "L":
+            history[user_id]["losses"] += 1
 
-    history[user_id]["username"] = username
+        history[user_id]["history"].append(result)
 
-    save_json(
-        "prediction_history.json",
-        history
-    )
+        streak = 0
+        for item in reversed(history[user_id]["history"]):
+            if item == "W":
+                streak += 1
+            else:
+                break
+        history[user_id]["streak"] = streak
+        history[user_id]["username"] = username
+
+    save_json("prediction_history.json", history)
 
 from utils.worldcup import (
     fetch_world_cup_matches
@@ -180,17 +180,17 @@ class Scheduler(commands.Cog):
                 losing_votes
             )
 
+            update_all_prediction_histories(
+                match_votes,
+                correct_prediction,
+                leaderboard
+            )
+
             for user_id, vote_data in match_votes.items():
 
                 correct = (
                     vote_data["prediction"]
                     == correct_prediction
-                )
-
-                update_prediction_history(
-                    user_id,
-                    vote_data["username"],
-                    "W" if correct else "L"
                 )
 
                 if correct:

@@ -45,7 +45,7 @@ class Form(commands.Cog):
 
             if result == "W":
                 score += 1
-            else:
+            elif result == "L":
                 score -= 1
 
             scores.append(score)
@@ -66,6 +66,7 @@ class Form(commands.Cog):
 
         green = "#4ADE80"
         red = "#F87171"
+        grey = "#808080"
 
         fig.patch.set_facecolor(bg)
         ax.set_facecolor(bg)
@@ -74,11 +75,12 @@ class Form(commands.Cog):
             len(scores) - 1
         ):
 
-            color = (
-                green
-                if scores[i + 1] > scores[i]
-                else red
-            )
+            if scores[i + 1] > scores[i]:
+                color = green
+            elif scores[i + 1] < scores[i]:
+                color = red
+            else:
+                color = grey
 
             ax.plot(
                 [x[i], x[i + 1]],
@@ -93,7 +95,7 @@ class Form(commands.Cog):
             scores[1:],
             c=[
                 green if r == "W"
-                else red
+                else (red if r == "L" else grey)
                 for r in history
             ],
             s=35,

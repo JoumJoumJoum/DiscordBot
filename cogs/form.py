@@ -341,8 +341,6 @@ class Form(commands.Cog):
         wr1 = (w1 / total1 * 100) if total1 > 0 else 0.0
         wr2 = (w2 / total2 * 100) if total2 > 0 else 0.0
 
-        streak1 = self.calculate_streak(user1_stats.get("history", []))
-        streak2 = self.calculate_streak(user2_stats.get("history", []))
 
         def get_best_streak(history_list):
             max_streak = 0
@@ -361,27 +359,7 @@ class Form(commands.Cog):
         pts1 = h1_extended[-1]
         pts2 = h2_extended[-1]
 
-        # Formatting comparison strings with crowns
-        def compare_values(v1, v2, format_str="{}", suffix=""):
-            if v1 > v2:
-                return f"{format_str.format(v1)}{suffix} 👑", f"{format_str.format(v2)}{suffix}"
-            elif v2 > v1:
-                return f"{format_str.format(v1)}{suffix}", f"{format_str.format(v2)}{suffix} 👑"
-            else:
-                return f"{format_str.format(v1)}{suffix}", f"{format_str.format(v2)}{suffix}"
 
-        pts1_str, pts2_str = compare_values(pts1, pts2, "`{} pts`")
-        wr1_str, wr2_str = compare_values(round(wr1, 1), round(wr2, 1), "`{}%`")
-        streak1_str, streak2_str = compare_values(streak1, streak2, "`{}`")
-        best1_str, best2_str = compare_values(best1, best2, "`{}`")
-
-        # Compare Win counts for record crown
-        rec1_str = f"`{w1}W - {l1}L`"
-        rec2_str = f"`{w2}W - {l2}L`"
-        if w1 > w2:
-            rec1_str += " 👑"
-        elif w2 > w1:
-            rec2_str += " 👑"
 
         x = list(range(max_len))
 
@@ -494,16 +472,28 @@ class Form(commands.Cog):
         file = discord.File(buffer, filename="versus.png")
 
         embed = discord.Embed(
-            title=f"⚔️ Versus Face-Off: {user1.display_name} vs {user2.display_name}",
-            description=(
-                f"📊 **Head-to-Head Comparison**\n\n"
-                f"🏆 **Points:** {user1.display_name} ({pts1_str}) vs {user2.display_name} ({pts2_str})\n"
-                f"🎯 **Record:** {user1.display_name} ({rec1_str}) vs {user2.display_name} ({rec2_str})\n"
-                f"📈 **Win Rate:** {user1.display_name} ({wr1_str}) vs {user2.display_name} ({wr2_str})\n"
-                f"🔥 **Current Streak:** {user1.display_name} ({streak1_str}) vs {user2.display_name} ({streak2_str})\n"
-                f"👑 **Best Streak:** {user1.display_name} ({best1_str}) vs {user2.display_name} ({best2_str})"
-            ),
+            title=f"Versus Face-Off: {user1.display_name} vs {user2.display_name}",
             color=0x2B2D31
+        )
+        embed.add_field(
+            name=user1.display_name,
+            value=(
+                f"Points: `{pts1} pts`\n"
+                f"Record: `{w1}W - {l1}L`\n"
+                f"Win Rate: `{round(wr1, 1)}%`\n"
+                f"Best Streak: `{best1}`"
+            ),
+            inline=True
+        )
+        embed.add_field(
+            name=user2.display_name,
+            value=(
+                f"Points: `{pts2} pts`\n"
+                f"Record: `{w2}W - {l2}L`\n"
+                f"Win Rate: `{round(wr2, 1)}%`\n"
+                f"Best Streak: `{best2}`"
+            ),
+            inline=True
         )
         embed.set_image(url="attachment://versus.png")
 

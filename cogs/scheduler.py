@@ -215,10 +215,10 @@ class Scheduler(commands.Cog):
                 ):
                     losing_votes += 1
 
-            points_awarded = max(
-                1,
-                losing_votes
-            )
+            settings = load_json("settings.json")
+            multiplier = settings.get("points_multiplier", 1.0)
+            points_awarded = int(max(1, losing_votes) * multiplier)
+
 
             update_all_prediction_histories(
                 match_votes,

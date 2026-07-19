@@ -967,6 +967,7 @@ class Predictions(commands.Cog):
                 "**`/revertmatch [message_id]`** - Revert a match: deducts points, adjusts streaks/history, restores votes.\n"
                 "**`/rebuildhistory`** - Reconstruct prediction history including flatlines (no-votes) from channel logs.\n"
                 "**`/multiplier [number]`** - Set the points multiplier for match winners.\n"
+                "**`/stats`** - View the tournament stats recap (Winner, Accuracy, Streak, Downfall, Glowup).\n"
                 "**`/createtestmatch [home] [away] [hours]`** - Create a custom match poll for testing.\n"
                 "**`/testpoints`** - Give yourself 1 point on the leaderboard for testing.\n"
                 "**`!dumpdata`** - (Prefix Command) Dumps the bot's raw database JSON files."
@@ -1364,6 +1365,175 @@ class Predictions(commands.Cog):
         await interaction.response.send_message(
             f"Points multiplier set to {number} !"
         )
+
+    @app_commands.command(
+        name="stats",
+        description="View overall tournament stats recap including winner, accuracies, downfall, and glowup (Owner only)"
+    )
+    async def tournament_stats(
+        self,
+        interaction: discord.Interaction
+    ):
+        if not await self.owner_only(interaction):
+            return
+
+        leaderboard = load_json("leaderboard.json")
+        prediction_history = load_json("prediction_history.json")
+        points_history = load_json("points_history.json")
+
+        if not leaderboard:
+            await interaction.response.send_message("No leaderboard data found.", ephemeral=True)
+            return
+
+        # 1. Winner of the Tournament
+        sorted_leaderboard = sorted(
+            leaderboard.items(),
+            key=lambda x: (x[1]["points"], x[1]["username"]),
+            reverse=True
+        )
+        winner_name = sorted_leaderboard[0][1]["username"]
+        winner_pts = sorted_leaderboard[0][1]["points"]
+
+        # 2. Accuracy (Most / Least Accurate)
+        accuracy_list = []
+        for uid, udata in prediction_history.items():
+            wins = udata.get("wins", 0)
+            losses = udata.get("losses", 0)
+            total = wins + losses
+            if total >= 10:
+                win_rate = (wins / total) * 100
+                accuracy_list.append((uid, udata["username"], win_rate, wins, total))
+
+        if not accuracy_list:
+            for uid, udata in prediction_history.items():
+                wins = udata.get("wins", 0)
+                losses = udata.get("losses", 0)
+                total = wins + losses
+                if total >= 1:
+                    win_rate = (wins / total) * 100
+                    accuracy_list.append((uid, udata["username"], win_rate, wins, total))
+
+        accuracy_list_sorted = sorted(accuracy_list, key=lambda x: x[2], reverse=True)
+
+        most_accurate = None
+        least_accurate = None
+        if accuracy_list_sorted:
+            most_accurate = accuracy_list_sorted[0]
+            least_accurate = accuracy_list_sorted[-1]
+
+        # 3. Highest Streak
+        def get_best_streak(history_list):
+            max_streak = 0
+            current = 0
+            for item in history_list:
+                if item == "W":
+                    current += 1
+                    max_streak = max(max_streak, current)
+                elif item == "L":
+                    current = 0
+            return max_streak
+
+        streak_list = []
+        for uid, udata in prediction_history.items():
+            best_strk = get_best_streak(udata.get("history", []))
+            streak_list.append((udata["username"], best_strk))
+
+        streak_list_sorted = sorted(streak_list, key=lambda x: x[1], reverse=True)
+        best_streak_user = streak_list_sorted[0][0] if streak_list_sorted else "No one"
+        best_streak_val = streak_list_sorted[0][1] if streak_list_sorted else 0
+
+        # 4. Downfall and Glowup
+        downfalls = []
+        glowups = []
+        if points_history:
+            max_days = max(len(u["points_history"]) for u in points_history.values())
+            daily_ranks = {uid: [] for uid in points_history.keys()}
+            
+            for d in range(max_days):
+                day_standings = []
+                for uid, udata in points_history.items():
+                    pts_list = udata["points_history"]
+                    pts = pts_list[d] if d < len(pts_list) else pts_list[-1]
+                    day_standings.append((uid, udata["username"], pts))
+                
+                day_standings.sort(key=lambda x: x[2], reverse=True)
+                for rank, (uid, uname, pts) in enumerate(day_standings, start=1):
+                    daily_ranks[uid].append(rank)
+
+            for uid, ranks in daily_ranks.items():
+                username = points_history[uid]["username"]
+                if len(ranks) > 1:
+                    peak_rank = min(ranks)
+                    worst_rank = max(ranks)
+                    final_rank = ranks[-1]
+                    
+                    downfall = final_rank - peak_rank
+                    glowup = worst_rank - final_rank
+                    
+                    downfalls.append((username, downfall, peak_rank, final_rank))
+                    glowups.append((username, glowup, worst_rank, final_rank))
+
+        sorted_downfalls = sorted(downfalls, key=lambda x: x[1], reverse=True)
+        sorted_glowups = sorted(glowups, key=lambda x: x[1], reverse=True)
+
+        worst_downfall_user = sorted_downfalls[0][0] if sorted_downfalls else "N/A"
+        worst_downfall_val = sorted_downfalls[0][1] if sorted_downfalls else 0
+        peak_r = sorted_downfalls[0][2] if sorted_downfalls else 0
+        final_r_down = sorted_downfalls[0][3] if sorted_downfalls else 0
+
+        best_glowup_user = sorted_glowups[0][0] if sorted_glowups else "N/A"
+        best_glowup_val = sorted_glowups[0][1] if sorted_glowups else 0
+        worst_r = sorted_glowups[0][2] if sorted_glowups else 0
+        final_r_glow = sorted_glowups[0][3] if sorted_glowups else 0
+
+        # Build recap embed
+        embed = discord.Embed(
+            title="🏆 FIFA World Cup Prediction Tournament Recap",
+            description="The World Cup has concluded! Here is the final tournament stats board:",
+            color=0x2B2D31
+        )
+
+        embed.add_field(
+            name="🥇 Winner of the Tournament",
+            value=f"**{winner_name}** with `{winner_pts} pts`",
+            inline=False
+        )
+
+        if most_accurate:
+            embed.add_field(
+                name="🎯 Most Accurate Predictor",
+                value=f"**{most_accurate[1]}** - `{most_accurate[2]:.1f}%` win rate ({most_accurate[3]}/{most_accurate[4]} correct)",
+                inline=True
+            )
+
+        if least_accurate:
+            embed.add_field(
+                name="🤡 Least Accurate Predictor",
+                value=f"**{least_accurate[1]}** - `{least_accurate[2]:.1f}%` win rate ({least_accurate[3]}/{least_accurate[4]} correct)",
+                inline=True
+            )
+
+        embed.add_field(
+            name="🔥 Highest Streak",
+            value=f"**{best_streak_user}** with a peak streak of `{best_streak_val}` correct predictions",
+            inline=False
+        )
+
+        if sorted_downfalls and worst_downfall_val > 0:
+            embed.add_field(
+                name="📉 Worst Downfall",
+                value=f"**{worst_downfall_user}** (Dropped `{worst_downfall_val}` positions from rank {peak_r} down to rank {final_r_down})",
+                inline=True
+            )
+
+        if sorted_glowups and best_glowup_val > 0:
+            embed.add_field(
+                name="📈 Best Glow-Up",
+                value=f"**{best_glowup_user}** (Climbed `{best_glowup_val}` positions from rank {worst_r} up to rank {final_r_glow})",
+                inline=True
+            )
+
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Predictions(bot))

@@ -1488,49 +1488,49 @@ class Predictions(commands.Cog):
 
         # Build recap embed
         embed = discord.Embed(
-            title="🏆 FIFA World Cup Prediction Tournament Recap",
+            title="FIFA World Cup Prediction Tournament Recap",
             description="The World Cup has concluded! Here is the final tournament stats board:",
             color=0x2B2D31
         )
 
         embed.add_field(
-            name="🥇 Winner of the Tournament",
+            name="Winner of the Tournament",
             value=f"**{winner_name}** with `{winner_pts} pts`",
             inline=False
         )
 
         if most_accurate:
             embed.add_field(
-                name="🎯 Most Accurate Predictor",
+                name="Most Accurate Predictor",
                 value=f"**{most_accurate[1]}** - `{most_accurate[2]:.1f}%` win rate ({most_accurate[3]}/{most_accurate[4]} correct)",
-                inline=True
+                inline=False
             )
 
         if least_accurate:
             embed.add_field(
-                name="🤡 Least Accurate Predictor",
+                name="Least Accurate Predictor",
                 value=f"**{least_accurate[1]}** - `{least_accurate[2]:.1f}%` win rate ({least_accurate[3]}/{least_accurate[4]} correct)",
-                inline=True
+                inline=False
             )
 
         embed.add_field(
-            name="🔥 Highest Streak",
+            name="Highest Streak",
             value=f"**{best_streak_user}** with a peak streak of `{best_streak_val}` correct predictions",
             inline=False
         )
 
         if sorted_downfalls and worst_downfall_val > 0:
             embed.add_field(
-                name="📉 Worst Downfall",
+                name="Worst Downfall",
                 value=f"**{worst_downfall_user}** (Dropped `{worst_downfall_val}` positions from rank {peak_r} down to rank {final_r_down})",
-                inline=True
+                inline=False
             )
 
         if sorted_glowups and best_glowup_val > 0:
             embed.add_field(
-                name="📈 Best Glow-Up",
+                name="Best Glow-Up",
                 value=f"**{best_glowup_user}** (Climbed `{best_glowup_val}` positions from rank {worst_r} up to rank {final_r_glow})",
-                inline=True
+                inline=False
             )
 
         await interaction.response.send_message(embed=embed)

@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from utils.storage import load_json
+from utils.config import OWNER_ID
 
 import matplotlib
 matplotlib.use("Agg")
@@ -501,6 +502,178 @@ class Form(commands.Cog):
             embed=embed,
             file=file
         )
+
+    async def owner_only(
+        self,
+        interaction: discord.Interaction
+    ):
+        if interaction.user.id != OWNER_ID:
+            await interaction.response.send_message(
+                "Owner only.",
+                ephemeral=True
+            )
+            return False
+        return True
+
+    @app_commands.command(
+        name="finaltable",
+        description="View the points race progress graph for all users at once (Owner only)"
+    )
+    async def final_table(
+        self,
+        interaction: discord.Interaction
+    ):
+        if not await self.owner_only(interaction):
+            return
+
+        await interaction.response.defer()
+
+        points_history_data = load_json("points_history.json")
+
+        if not points_history_data:
+            await interaction.followup.send("No points history data found.")
+            return
+
+        max_len = max(len(u["points_history"]) for u in points_history_data.values())
+        max_pts = max(max(u["points_history"]) for u in points_history_data.values())
+
+        x = list(range(max_len))
+
+        fig, ax = plt.subplots(figsize=(10, 6), dpi=150)
+
+        bg = "#1A1B26"
+        grid = "#2D3142"
+        text = "#A9B1D6"
+
+        fig.patch.set_facecolor(bg)
+        ax.set_facecolor(bg)
+
+        colors = [
+            "#FF2E93", "#00F0FF", "#4ADE80", "#FBBF24", 
+            "#A855F7", "#F97316", "#EC4899", "#3B82F6",
+            "#14B8A6", "#EF4444"
+        ]
+        user_colors = {}
+        for idx, uid in enumerate(points_history_data.keys()):
+            user_colors[uid] = colors[idx % len(colors)]
+
+        extended_histories = {}
+        for uid, udata in points_history_data.items():
+            hist = udata["points_history"]
+            h_extended = hist + [hist[-1]] * (max_len - len(hist))
+            extended_histories[uid] = h_extended
+            
+            clean_name = "".join(c for c in udata["username"] if ord(c) < 128 or c == '\u03c0')
+
+            ax.plot(
+                x,
+                h_extended,
+                color=user_colors[uid],
+                linewidth=2.5,
+                label=clean_name,
+                solid_capstyle="round"
+            )
+
+        tasks = []
+        async def fetch_avatar(session, user_id, user_obj):
+            try:
+                async with session.get(str(user_obj.display_avatar.url)) as r:
+                    if r.status == 200:
+                        return user_id, await r.read()
+            except Exception:
+                pass
+            return user_id, None
+
+        import asyncio
+        async with aiohttp.ClientSession() as session:
+            for uid in points_history_data.keys():
+                member = interaction.guild.get_member(int(uid))
+                if not member:
+                    try:
+                        member = await interaction.guild.fetch_member(int(uid))
+                    except Exception:
+                        pass
+                if member:
+                    tasks.append(fetch_avatar(session, uid, member))
+            avatar_results = await asyncio.gather(*tasks)
+
+        avatars = {uid: abytes for uid, abytes in avatar_results if abytes}
+
+        for uid, h_extended in extended_histories.items():
+            abytes = avatars.get(uid)
+            if abytes:
+                try:
+                    img = make_circular_avatar(abytes, size=28)
+                    imagebox = OffsetImage(img, zoom=1.0)
+                    ab = AnnotationBbox(imagebox, (x[-1], h_extended[-1]), frameon=False)
+                    ax.add_artist(ab)
+                except Exception as e:
+                    print(f"Error drawing avatar for {uid}: {e}")
+
+        ax.text(
+            0.01,
+            1.05,
+            "🏆 World Cup Predictions Race Standings",
+            transform=ax.transAxes,
+            color=text,
+            fontsize=14,
+            fontweight="bold",
+            ha="left"
+        )
+
+        ax.grid(True, color=grid, alpha=0.3)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color(grid)
+        ax.spines["bottom"].set_color(grid)
+
+        ax.tick_params(colors=text, labelsize=9)
+        ax.set_xlabel("Match Days / Predictions", color=text)
+        ax.set_ylabel("Accumulated Points", color=text)
+
+        ax.legend(
+            facecolor=bg,
+            edgecolor=grid,
+            labelcolor=text,
+            loc="upper left",
+            ncol=2
+        )
+
+        plt.tight_layout()
+
+        buffer = BytesIO()
+        plt.savefig(
+            buffer,
+            format="png",
+            dpi=150,
+            facecolor=bg
+        )
+        plt.close()
+        buffer.seek(0)
+
+        file = discord.File(buffer, filename="final_table.png")
+
+        standings = []
+        for uid, udata in points_history_data.items():
+            standings.append((udata["username"], extended_histories[uid][-1]))
+        standings.sort(key=lambda x: x[1], reverse=True)
+
+        desc_lines = []
+        for idx, (uname, pts) in enumerate(standings, start=1):
+            desc_lines.append(f"{idx}. **{uname}**: `{pts} pts`")
+
+        embed = discord.Embed(
+            title="🏆 World Cup Standings Race",
+            description="\n".join(desc_lines),
+            color=0x2B2D31
+        )
+        embed.set_image(url="attachment://final_table.png")
+
+        await interaction.followup.send(
+            embed=embed,
+            file=file
+        )
+
 
 def make_circular_avatar(avatar_bytes, size=30):
     img = Image.open(BytesIO(avatar_bytes)).convert("RGBA")

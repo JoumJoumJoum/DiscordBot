@@ -968,6 +968,7 @@ class Predictions(commands.Cog):
                 "**`/rebuildhistory`** - Reconstruct prediction history including flatlines (no-votes) from channel logs.\n"
                 "**`/multiplier [number]`** - Set the points multiplier for match winners.\n"
                 "**`/stats`** - View the tournament stats recap (Winner, Accuracy, Streak, Downfall, Glowup).\n"
+                "**`/finaltable`** - View the points race progress graph for all users at once.\n"
                 "**`/createtestmatch [home] [away] [hours]`** - Create a custom match poll for testing.\n"
                 "**`/testpoints`** - Give yourself 1 point on the leaderboard for testing.\n"
                 "**`!dumpdata`** - (Prefix Command) Dumps the bot's raw database JSON files."

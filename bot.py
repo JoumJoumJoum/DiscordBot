@@ -114,6 +114,11 @@ async def dumpdata(ctx):
         files.append(discord.File("data/prediction_history.json"))
     except FileNotFoundError:
         pass
+
+    try:
+        files.append(discord.File("data/points_history.json"))
+    except FileNotFoundError:
+        pass
     
     if not files:
         await ctx.send("No data files found.")
